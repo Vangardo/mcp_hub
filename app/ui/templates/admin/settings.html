@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - MCP Hub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">Admin Settings</h1>
+        <p class="mt-1 text-sm text-slate-500">Manage public URLs and integration credentials</p>
+    </div>
+
+    <form id="admin-settings-form" class="space-y-6">
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Public URL</h2>
+            <p class="text-sm text-slate-500">Used to build the MCP endpoint URL shown in GPT configuration.</p>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Public Base URL</label>
+                <input type="text" name="public_base_url" placeholder="https://mcp.example.com"
+                       value="{{ settings.public_base_url or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                <p class="mt-1 text-xs text-slate-500">Preferred. Include scheme and port if needed.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Public Host (optional)</label>
+                <input type="text" name="public_host" placeholder="mcp.example.com"
+                       value="{{ settings.public_host or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                <p class="mt-1 text-xs text-slate-500">Used only if Public Base URL is empty.</p>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Teamwork OAuth</h2>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
+                <input type="text" name="teamwork_client_id"
+                       value="{{ settings.teamwork_client_id or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label>
+                <input type="password" name="teamwork_client_secret"
+                       value="{{ settings.teamwork_client_secret or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Slack OAuth</h2>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
+                <input type="text" name="slack_client_id"
+                       value="{{ settings.slack_client_id or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label>
+                <input type="password" name="slack_client_secret"
+                       value="{{ settings.slack_client_secret or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Telegram (MTProto)</h2>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">API ID</label>
+                <input type="text" name="telegram_api_id"
+                       value="{{ settings.telegram_api_id or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">API Hash</label>
+                <input type="password" name="telegram_api_hash"
+                       value="{{ settings.telegram_api_hash or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                Save Settings
+            </button>
+            <span id="save-status" class="text-sm text-slate-500"></span>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('admin-settings-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/admin/settings', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to save settings');
+            }
+            showToast('Settings saved', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - MCP Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Fira Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        }
+        code, pre, .font-mono {
+            font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+    </style>
+</head>
+<body class="h-full bg-gradient-to-br from-slate-50 via-white to-primary-50">
+    <div class="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-md fade-in">
+            <div class="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+                <div class="text-center mb-6">
+                    <div class="flex items-center justify-center space-x-2 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">MCP Hub</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900">Request Access</h2>
+                    <p class="mt-2 text-sm text-slate-500">Your request will be reviewed by an administrator.</p>
+                </div>
+
+                {% if error %}
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <span class="text-sm">{{ error }}</span>
+                </div>
+                {% endif %}
+
+                {% if success %}
+                <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg">
+                    <span class="text-sm">{{ success }}</span>
+                </div>
+                {% endif %}
+
+                <form action="/signup" method="POST" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Email address</label>
+                        <input name="email" type="email" autocomplete="email" required
+                               class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                               placeholder="you@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                        <input name="password" type="password" autocomplete="new-password" required
+                               class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                               placeholder="Create a password">
+                    </div>
+
+                    <button type="submit"
+                            class="w-full flex justify-center items-center py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 transition-all">
+                        Submit request
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center text-sm text-slate-500">
+                    Already have access?
+                    <a href="/login" class="text-primary-600 hover:text-primary-700 font-medium">Back to login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

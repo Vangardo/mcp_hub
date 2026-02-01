@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/data
+    environment:
+      # Application
+      - DEBUG=false
+      - BASE_URL=${BASE_URL:-http://localhost:8000}
+
+      # Admin credentials (change in production!)
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+
+      # Security (MUST change in production!)
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - TOKENS_ENCRYPTION_KEY=${TOKENS_ENCRYPTION_KEY:-change-this-key-in-production}
+
+      # Database
+      - DATABASE_PATH=/data/app.db
+
+      # Teamwork OAuth (optional)
+      - TEAMWORK_CLIENT_ID=${TEAMWORK_CLIENT_ID:-}
+      - TEAMWORK_CLIENT_SECRET=${TEAMWORK_CLIENT_SECRET:-}
+
+      # Slack OAuth (optional)
+      - SLACK_CLIENT_ID=${SLACK_CLIENT_ID:-}
+      - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  data:

@@ -1,0 +1,803 @@
+{% extends "base.html" %}
+
+{% block title %}Integrations - MCP Hub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Integrations</h1>
+            <p class="mt-1 text-sm text-slate-500">Connect your services to use them with AI assistants</p>
+        </div>
+        <button onclick="showConfigModal()"
+                class="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+            </svg>
+            Get GPT Config
+        </button>
+    </div>
+
+    <!-- Integration Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {% for integration in integrations %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-hover transition-all duration-200">
+            <div class="p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-4">
+                        {% if integration.name == 'teamwork' %}
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                            </svg>
+                        </div>
+                        {% elif integration.name == 'slack' %}
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+                            </svg>
+                        </div>
+                        {% elif integration.name == 'telegram' %}
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9.04 15.176l-.375 5.267c.536 0 .768-.231 1.047-.508l2.52-2.39 5.224 3.82c.959.529 1.64.25 1.902-.887L23.91 3.31c.3-1.308-.473-1.82-1.33-1.5L1.3 10.02c-1.277.496-1.258 1.21-.22 1.531l5.494 1.714L19.2 5.9c.595-.395 1.136-.177.69.218z"/>
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-500/25">
+                            <span class="text-2xl font-bold text-white">{{ integration.name[0]|upper }}</span>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900">{{ integration.display_name }}</h3>
+                            <p class="text-sm text-slate-500">{{ integration.description }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    {% if not integration.is_configured %}
+                    <div class="flex items-center space-x-2 text-slate-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span class="text-sm font-medium">Not Configured</span>
+                    </div>
+                    {% elif integration.is_connected %}
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2 text-emerald-600">
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <span class="text-sm font-medium">Connected</span>
+                        </div>
+                    </div>
+                    {% if integration.meta %}
+                    <p class="mt-2 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg">
+                        {% if integration.meta.team_name %}
+                        Workspace: <span class="font-medium text-slate-700">{{ integration.meta.team_name }}</span>
+                        {% elif integration.meta.company_name %}
+                        Company: <span class="font-medium text-slate-700">{{ integration.meta.company_name }}</span>
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                    {% else %}
+                    <div class="flex items-center space-x-2 text-amber-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                        </svg>
+                        <span class="text-sm font-medium">Disconnected</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                {% if not integration.is_configured %}
+                <span class="text-sm text-slate-500">Configure in Admin Settings or environment variables</span>
+                {% elif integration.is_connected %}
+                <form action="/integrations/{{ integration.name }}/disconnect" method="post" class="inline">
+                    <button type="submit"
+                            class="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800 transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        Disconnect
+                    </button>
+                </form>
+                {% else %}
+                {% if integration.name == 'telegram' %}
+                <button type="button"
+                        onclick="showTelegramModal()"
+                        class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    Connect
+                </button>
+                {% else %}
+                <a href="/oauth/{{ integration.name }}/start"
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    Connect
+                </a>
+                {% endif %}
+                {% endif %}
+                <button type="button"
+                        onclick="showConfigModal('{{ integration.name }}', '{{ integration.display_name }}', '{{ integration.description }}')"
+                        class="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M9 8h6m2 12H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/>
+                    </svg>
+                    Config
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not integrations %}
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-slate-900">No integrations available</h3>
+        <p class="mt-1 text-sm text-slate-500">Configure integrations in Admin Settings or your environment variables.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Telegram Connect Modal -->
+<div id="telegram-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-sky-600 to-cyan-600 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Connect Telegram</h3>
+                <button onclick="hideTelegramModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div id="telegram-step-phone">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Phone number</label>
+                    <input type="text" id="telegram-phone" placeholder="+1..."
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <button onclick="telegramStart()"
+                            class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
+                        Send code
+                    </button>
+                </div>
+
+                <div id="telegram-step-code" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Verification code</label>
+                    <input type="text" id="telegram-code" placeholder="12345"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <button onclick="telegramVerify()"
+                            class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
+                        Verify code
+                    </button>
+                </div>
+
+                <div id="telegram-step-password" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">2FA Password</label>
+                    <input type="password" id="telegram-password" placeholder="Telegram 2FA password"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <button onclick="telegramSubmitPassword()"
+                            class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Config Modal -->
+<div id="config-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    GPT MCP Configuration
+                    <span id="config-scope-label" class="ml-2 text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">All</span>
+                </h3>
+                <button onclick="hideConfigModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <p class="text-sm text-slate-600">
+                    Two config types. Use Bearer JSON for direct MCP clients, or OAuth for ChatGPT-style setup.
+                </p>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Name</label>
+                            <input id="config-name" type="text" readonly
+                                   class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Description</label>
+                            <input id="config-description" type="text" readonly
+                                   class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Server URL</label>
+                        <div class="flex items-center gap-2">
+                            <input id="config-server-url" type="text" readonly
+                                   class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+                            <button type="button" onclick="copyText('config-server-url')"
+                                    class="px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="inline-flex flex-wrap rounded-lg border border-slate-200 bg-slate-50 p-1" id="mode-buttons">
+                    <button type="button" data-mode="bearer"
+                            class="px-3 py-1.5 text-sm rounded-md text-slate-700 bg-white shadow-sm">
+                        Bearer JSON
+                    </button>
+                    <button type="button" data-mode="oauth"
+                            class="px-3 py-1.5 text-sm rounded-md text-slate-600 hover:text-slate-900">
+                        OAuth (ChatGPT)
+                    </button>
+                </div>
+
+                <div id="bearer-panel" class="space-y-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm font-semibold text-slate-900">Bearer JSON</h4>
+                                <p class="text-xs text-slate-500">Copy a ready-to-use MCP JSON config.</p>
+                            </div>
+                            <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1" id="token-type-buttons">
+                                <button type="button" data-token="pat"
+                                        class="px-3 py-1.5 text-sm rounded-md text-slate-600 hover:text-slate-900">
+                                    PAT (30+ days)
+                                </button>
+                                <button type="button" data-token="jwt"
+                                        class="px-3 py-1.5 text-sm rounded-md text-slate-600 hover:text-slate-900">
+                                    JWT (15 min)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="pat-tools" class="hidden space-y-2">
+                            <label class="block text-xs font-medium text-slate-500">Personal Access Token</label>
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <input id="pat-input" type="text" placeholder="Paste existing PAT"
+                                       class="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white">
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="applyPatToken()"
+                                            class="px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                                        Use token
+                                    </button>
+                                    <button type="button" onclick="generatePatToken()"
+                                            class="px-3 py-2 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                                        Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500">Generate a new PAT or paste an existing one from Account.</p>
+                        </div>
+
+                        <div class="relative" id="config-json-wrapper">
+                            <pre id="config-json" class="bg-slate-900 text-emerald-400 p-4 rounded-lg text-sm overflow-x-auto font-mono"></pre>
+                            <button onclick="copyConfig()"
+                                    class="absolute top-3 right-3 inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+
+                        <div class="flex items-start space-x-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span id="token-note">JWT expires in 15 minutes. Use PAT for long-lived access.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="oauth-panel" class="hidden space-y-4">
+                    <div class="rounded-xl border border-slate-200 p-4 space-y-3 bg-white">
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-900">OAuth Client Credentials</h4>
+                            <p class="text-xs text-slate-500">Use these values when adding MCP Hub in ChatGPT.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Token URL</label>
+                            <div class="flex items-center gap-2">
+                                <input id="oauth-token-url" type="text" readonly
+                                       class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+                                <button type="button" onclick="copyText('oauth-token-url')"
+                                        class="px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Client ID</label>
+                                <input id="oauth-client-id" type="text" readonly placeholder="Select or create a credential"
+                                       class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Client Secret</label>
+                                <input id="oauth-client-secret" type="text" readonly placeholder="Reveal to view secret"
+                                       class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500">Grant type: <code class="font-mono">client_credentials</code></p>
+                    </div>
+
+                    <div class="rounded-xl border border-slate-200 p-4 space-y-3 bg-white">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-sm font-semibold text-slate-900">Saved credentials</h4>
+                            <div class="flex items-center gap-2">
+                                <input id="new-client-name" type="text" placeholder="Credential name (optional)"
+                                       class="px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                <button type="button" onclick="createClientCredentials()"
+                                        class="px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                                    Create
+                                </button>
+                            </div>
+                        </div>
+                        <div id="client-credentials-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let configData = null;
+    let configProvider = null;
+    let configName = 'MCP Hub';
+    let configDescription = 'Unified MCP gateway for connected integrations';
+    let configBadge = 'All';
+    let configMode = 'bearer';
+    let tokenMode = 'pat';
+    let patToken = null;
+    let patExpiresAt = null;
+    let clientCredentials = [];
+    let clientSecrets = {};
+    let selectedClientId = null;
+    let clientCredentialsLoaded = false;
+    let telegramLoginId = null;
+
+    async function showConfigModal(provider = null, displayName = null, description = null) {
+        try {
+            configProvider = provider;
+            configName = displayName ? displayName : 'MCP Hub';
+            configDescription = description ? description : 'Unified MCP gateway for connected integrations';
+            configBadge = displayName ? displayName : 'All';
+            if (provider && displayName) {
+                configName = `${displayName} (MCP)`;
+            }
+            const url = provider ? `/config/mcp?provider=${encodeURIComponent(provider)}` : '/config/mcp';
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to get config');
+            configData = await response.json();
+            updateScopeLabel();
+            initConfigUi();
+            document.getElementById('config-modal').classList.remove('hidden');
+        } catch (error) {
+            showToast('Failed to generate config', 'error');
+        }
+    }
+
+    function hideConfigModal() {
+        document.getElementById('config-modal').classList.add('hidden');
+    }
+
+    function copyConfig() {
+        const configText = document.getElementById('config-json').textContent;
+        navigator.clipboard.writeText(configText).then(() => {
+            showToast('Configuration copied to clipboard!', 'success');
+        }).catch(() => {
+            showToast('Failed to copy', 'error');
+        });
+    }
+
+    function copyText(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const value = input.value || input.textContent || '';
+        if (!value) return;
+        navigator.clipboard.writeText(value).then(() => {
+            showToast('Copied to clipboard', 'success');
+        }).catch(() => {
+            showToast('Failed to copy', 'error');
+        });
+    }
+
+    document.getElementById('config-modal').addEventListener('click', function(e) {
+        if (e.target === this) hideConfigModal();
+    });
+
+    function updateScopeLabel() {
+        const label = document.getElementById('config-scope-label');
+        label.textContent = configBadge;
+    }
+
+    function buildConfig() {
+        if (!configData || !configData.mcpServers) return null;
+        return configData;
+    }
+
+    function renderMetaFields() {
+        const baseConfig = buildConfig();
+        if (!baseConfig) return;
+        const server = Object.values(baseConfig.mcpServers)[0];
+        document.getElementById('config-name').value = configName;
+        document.getElementById('config-description').value = configDescription;
+        document.getElementById('config-server-url').value = server.url;
+    }
+
+    function initConfigUi() {
+        configMode = 'bearer';
+        tokenMode = 'pat';
+        clientCredentialsLoaded = false;
+        renderMetaFields();
+        updateButtonGroup('mode-buttons', 'mode', configMode);
+        updateButtonGroup('token-type-buttons', 'token', tokenMode);
+        document.getElementById('bearer-panel').classList.remove('hidden');
+        document.getElementById('oauth-panel').classList.add('hidden');
+        renderBearerConfig();
+    }
+
+    function updateButtonGroup(containerId, dataAttr, value) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.querySelectorAll('button').forEach(btn => {
+            const isActive = btn.dataset[dataAttr] === value;
+            btn.classList.toggle('bg-white', isActive);
+            btn.classList.toggle('shadow-sm', isActive);
+            btn.classList.toggle('text-slate-700', isActive);
+            btn.classList.toggle('text-slate-600', !isActive);
+            btn.classList.toggle('hover:text-slate-900', !isActive);
+        });
+    }
+
+    function formatExpiry(isoValue) {
+        if (!isoValue) return '';
+        const date = new Date(isoValue);
+        if (Number.isNaN(date.getTime())) return isoValue;
+        const now = new Date();
+        const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const readable = date.toLocaleString();
+        if (Number.isFinite(diffDays)) {
+            return `${readable} (${diffDays} days)`;
+        }
+        return readable;
+    }
+
+    function renderBearerConfig() {
+        const baseConfig = buildConfig();
+        if (!baseConfig) return;
+        document.getElementById('pat-tools').classList.toggle('hidden', tokenMode !== 'pat');
+        if (tokenMode === 'pat') {
+            document.getElementById('pat-input').value = patToken || '';
+        }
+
+        if (tokenMode === 'pat') {
+            const patched = JSON.parse(JSON.stringify(baseConfig));
+            const tokenValue = patToken || '<PASTE_PAT>';
+            Object.values(patched.mcpServers).forEach(server => {
+                if (!server.headers) server.headers = {};
+                server.headers.Authorization = `Bearer ${tokenValue}`;
+            });
+            document.getElementById('config-json').textContent = JSON.stringify(patched, null, 2);
+            if (patToken && patExpiresAt) {
+                document.getElementById('token-note').textContent = `PAT expires at ${formatExpiry(patExpiresAt)}.`;
+            } else if (patToken) {
+                document.getElementById('token-note').textContent = 'PAT applied. Expiry unknown.';
+            } else {
+                document.getElementById('token-note').textContent = 'Paste or generate a PAT for long-lived access.';
+            }
+            return;
+        }
+
+        document.getElementById('config-json').textContent = JSON.stringify(baseConfig, null, 2);
+        document.getElementById('token-note').textContent = 'JWT expires in 15 minutes. Use PAT for long-lived access.';
+    }
+
+    function applyPatToken() {
+        const input = document.getElementById('pat-input');
+        const value = input.value.trim();
+        if (!value) {
+            showToast('Paste a PAT first', 'error');
+            return;
+        }
+        patToken = value;
+        patExpiresAt = null;
+        tokenMode = 'pat';
+        updateButtonGroup('token-type-buttons', 'token', tokenMode);
+        renderBearerConfig();
+        showToast('PAT applied', 'success');
+    }
+
+    async function generatePatToken() {
+        try {
+            const response = await fetch('/auth/personal_token', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ expires_days: 30 }),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to generate PAT');
+            }
+            const data = await response.json();
+            patToken = data.token;
+            patExpiresAt = data.expires_at;
+            document.getElementById('pat-input').value = patToken;
+            tokenMode = 'pat';
+            updateButtonGroup('token-type-buttons', 'token', tokenMode);
+            renderBearerConfig();
+            showToast('PAT generated', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    function renderOauthFields() {
+        const baseConfig = buildConfig();
+        if (!baseConfig) return;
+        const server = Object.values(baseConfig.mcpServers)[0];
+        document.getElementById('oauth-token-url').value = server.url.replace('/mcp', '/oauth/token');
+        document.getElementById('oauth-client-id').value = selectedClientId || '';
+        document.getElementById('oauth-client-secret').value = selectedClientId ? (clientSecrets[selectedClientId] || '') : '';
+    }
+
+    async function createClientCredentials() {
+        try {
+            const name = document.getElementById('new-client-name').value.trim() || null;
+            const response = await fetch('/auth/client_credentials', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name }),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to create client credentials');
+            }
+            const data = await response.json();
+            clientSecrets[data.client_id] = data.client_secret;
+            selectedClientId = data.client_id;
+            await loadClientCredentials();
+            document.getElementById('new-client-name').value = '';
+            renderOauthFields();
+            showToast('Client credentials created', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function loadClientCredentials() {
+        try {
+            const response = await fetch('/auth/client_credentials');
+            if (!response.ok) throw new Error('Failed to load credentials');
+            const data = await response.json();
+            clientCredentials = data.items || [];
+            if (!selectedClientId && clientCredentials.length) {
+                selectedClientId = clientCredentials[0].client_id;
+            }
+            clientCredentialsLoaded = true;
+            renderClientCredentials();
+            renderOauthFields();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    function renderClientCredentials() {
+        const container = document.getElementById('client-credentials-list');
+        container.innerHTML = '';
+        if (!clientCredentials.length) {
+            container.innerHTML = '<div class="text-xs text-slate-500">No client credentials yet.</div>';
+            return;
+        }
+        clientCredentials.forEach(item => {
+            const isActive = selectedClientId === item.client_id;
+            const createdAt = item.created_at ? item.created_at.slice(0, 19) : '-';
+            const lastUsed = item.last_used_at ? item.last_used_at.slice(0, 19) : '-';
+            const row = document.createElement('div');
+            row.className = `flex items-center justify-between border rounded-lg px-3 py-2 ${isActive ? 'border-primary-300 bg-primary-50' : 'border-slate-200'}`;
+            row.innerHTML = `
+                <div class="min-w-0">
+                    <div class="text-sm text-slate-800">${item.name || 'Credential'}</div>
+                    <div class="text-xs text-slate-500 truncate">${item.client_id}</div>
+                    <div class="text-[11px] text-slate-400">Created: ${createdAt} · Last used: ${lastUsed}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200" data-action="use">Use</button>
+                    <button class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200" data-action="reveal">Reveal</button>
+                    <button class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200" data-action="delete">Delete</button>
+                </div>
+            `;
+            row.querySelector('[data-action="use"]').addEventListener('click', () => selectClientCredential(item.client_id));
+            row.querySelector('[data-action="reveal"]').addEventListener('click', () => revealClientCredential(item.client_id));
+            row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteClientCredential(item.client_id));
+            container.appendChild(row);
+        });
+    }
+
+    async function selectClientCredential(clientId) {
+        selectedClientId = clientId;
+        if (!clientSecrets[clientId]) {
+            await revealClientCredential(clientId, false);
+        }
+        renderOauthFields();
+        renderClientCredentials();
+    }
+
+    async function revealClientCredential(clientId, notify = true) {
+        try {
+            const response = await fetch(`/auth/client_credentials/${clientId}`);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to reveal secret');
+            }
+            const data = await response.json();
+            clientSecrets[data.client_id] = data.client_secret;
+            if (selectedClientId === clientId) {
+                renderOauthFields();
+            }
+            if (notify) showToast('Secret revealed', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function deleteClientCredential(clientId) {
+        if (!confirm('Delete this client credential?')) return;
+        try {
+            const response = await fetch(`/auth/client_credentials/${clientId}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to delete credential');
+            }
+            if (selectedClientId === clientId) {
+                selectedClientId = null;
+                renderOauthFields();
+            }
+            await loadClientCredentials();
+            showToast('Credential deleted', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    document.getElementById('mode-buttons').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        configMode = btn.dataset.mode;
+        updateButtonGroup('mode-buttons', 'mode', configMode);
+        document.getElementById('bearer-panel').classList.toggle('hidden', configMode !== 'bearer');
+        document.getElementById('oauth-panel').classList.toggle('hidden', configMode !== 'oauth');
+        if (configMode === 'oauth') {
+            if (!clientCredentialsLoaded) {
+                loadClientCredentials();
+            } else {
+                renderOauthFields();
+            }
+        } else {
+            renderBearerConfig();
+        }
+    });
+
+    document.getElementById('token-type-buttons').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        tokenMode = btn.dataset.token;
+        updateButtonGroup('token-type-buttons', 'token', tokenMode);
+        renderBearerConfig();
+    });
+
+    function showTelegramModal() {
+        telegramLoginId = null;
+        document.getElementById('telegram-phone').value = '';
+        document.getElementById('telegram-code').value = '';
+        document.getElementById('telegram-password').value = '';
+        document.getElementById('telegram-step-phone').classList.remove('hidden');
+        document.getElementById('telegram-step-code').classList.add('hidden');
+        document.getElementById('telegram-step-password').classList.add('hidden');
+        document.getElementById('telegram-modal').classList.remove('hidden');
+    }
+
+    function hideTelegramModal() {
+        document.getElementById('telegram-modal').classList.add('hidden');
+    }
+
+    async function telegramStart() {
+        const phone = document.getElementById('telegram-phone').value.trim();
+        if (!phone) return showToast('Enter phone number', 'error');
+        try {
+            const response = await fetch('/integrations/telegram/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({phone}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to start Telegram login');
+            }
+            const data = await response.json();
+            telegramLoginId = data.login_id;
+            document.getElementById('telegram-step-phone').classList.add('hidden');
+            document.getElementById('telegram-step-code').classList.remove('hidden');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function telegramVerify() {
+        const code = document.getElementById('telegram-code').value.trim();
+        if (!telegramLoginId || !code) return showToast('Enter verification code', 'error');
+        try {
+            const response = await fetch('/integrations/telegram/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({login_id: telegramLoginId, code}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to verify code');
+            }
+            const data = await response.json();
+            if (data.requires_password) {
+                document.getElementById('telegram-step-code').classList.add('hidden');
+                document.getElementById('telegram-step-password').classList.remove('hidden');
+            } else {
+                window.location.reload();
+            }
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function telegramSubmitPassword() {
+        const password = document.getElementById('telegram-password').value;
+        if (!telegramLoginId || !password) return showToast('Enter 2FA password', 'error');
+        try {
+            const response = await fetch('/integrations/telegram/password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({login_id: telegramLoginId, password}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to verify password');
+            }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    document.getElementById('telegram-modal').addEventListener('click', function(e) {
+        if (e.target === this) hideTelegramModal();
+    });
+</script>
+{% endblock %}

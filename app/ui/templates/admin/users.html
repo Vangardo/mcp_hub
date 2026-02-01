@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block title %}Users - MCP Hub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">User Management</h1>
+            <p class="mt-1 text-sm text-slate-500">Manage user accounts and permissions</p>
+        </div>
+        <button onclick="showCreateUserModal()"
+                class="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Create User
+        </button>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
+        <ul class="divide-y divide-slate-200">
+            {% for u in users %}
+            <li class="hover:bg-slate-50 transition-colors">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                            <span class="text-sm font-semibold text-white">{{ u.email[0]|upper }}</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-slate-900">{{ u.email }}</span>
+                                {% if u.role == 'admin' %}
+                                <span class="px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">Admin</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">User</span>
+                                {% endif %}
+                                {% if u.status == 'pending' %}
+                                <span class="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">Pending</span>
+                                {% elif u.status == 'rejected' %}
+                                <span class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full" title="{{ u.rejected_reason or '' }}">Rejected</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">Approved</span>
+                                {% endif %}
+                                {% if not u.is_active %}
+                                <span class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Inactive</span>
+                                {% endif %}
+                            </div>
+                            <div class="mt-1 flex items-center space-x-4 text-xs text-slate-500">
+                                <span>Created: {{ u.created_at[:10] }}</span>
+                                {% if u.connections %}
+                                <span class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
+                                    </svg>
+                                    {{ u.connections|join(', ') }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if u.status != 'approved' %}
+                        <button onclick="approveUser({{ u.id }})"
+                                class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                title="Approve user">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </button>
+                        {% endif %}
+                        {% if u.status != 'rejected' %}
+                        <button onclick="rejectUser({{ u.id }})"
+                                class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Reject user">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                        {% endif %}
+                        <button onclick="editUser({{ u.id }}, '{{ u.email }}', '{{ u.role }}', {{ 'true' if u.is_active else 'false' }})"
+                                class="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <a href="/admin/audit?user_id={{ u.id }}"
+                           class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                           title="View audit log">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M9 8h6m2 12H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/>
+                            </svg>
+                        </a>
+                        <button onclick="toggleUserStatus({{ u.id }}, {{ 'true' if u.is_active else 'false' }})"
+                                class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="{{ 'Block user' if u.is_active else 'Unblock user' }}">
+                            {% if u.is_active %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 12.728M6.343 6.343l11.314 11.314"/>
+                            </svg>
+                            {% else %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {% endif %}
+                        </button>
+                        <button onclick="resetPassword({{ u.id }})"
+                                class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                            </svg>
+                        </button>
+                        <button onclick="createClientCredentials({{ u.id }})"
+                                class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Create client credentials">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-3.314 2.686-6 6-6m0 0a6 6 0 016 6m-6-6v6m-6 4a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- Client Credentials Modal -->
+<div id="client-credentials-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl p-6">
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-3.314 2.686-6 6-6m0 0a6 6 0 016 6m-6-6v6m-6 4a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">Client Credentials</h3>
+                <p class="text-sm text-slate-500 mb-4">Copy these credentials now. The secret is shown once.</p>
+                <div class="text-left space-y-3">
+                    <div>
+                        <label class="text-xs text-slate-500">Client ID</label>
+                        <div class="bg-slate-100 rounded-lg px-3 py-2 font-mono text-sm" id="client-id-display"></div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Client Secret</label>
+                        <div class="bg-slate-100 rounded-lg px-3 py-2 font-mono text-sm" id="client-secret-display"></div>
+                    </div>
+                </div>
+                <button onclick="hideClientCredentialsModal()" class="mt-6 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div id="create-user-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Create New User</h3>
+            </div>
+            <form id="create-user-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" name="email" required
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" name="password" required
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                    <select name="role"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="hideCreateUserModal()"
+                            class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="edit-user-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Edit User</h3>
+            </div>
+            <form id="edit-user-form" class="p-6 space-y-4">
+                <input type="hidden" name="user_id" id="edit-user-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" name="email" id="edit-email"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                    <select name="role" id="edit-role"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" name="is_active" id="edit-active"
+                               class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+                        <span class="text-sm text-slate-700">Active</span>
+                    </label>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="hideEditUserModal()"
+                            class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Password Modal -->
+<div id="password-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl p-6">
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">Password Reset</h3>
+                <p class="text-sm text-slate-500 mb-4">New password for the user:</p>
+                <div class="bg-slate-100 rounded-lg px-4 py-3 font-mono text-lg" id="new-password-display"></div>
+                <button onclick="hidePasswordModal()" class="mt-6 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showCreateUserModal() {
+        document.getElementById('create-user-modal').classList.remove('hidden');
+    }
+
+    function hideCreateUserModal() {
+        document.getElementById('create-user-modal').classList.add('hidden');
+        document.getElementById('create-user-form').reset();
+    }
+
+    function showEditUserModal() {
+        document.getElementById('edit-user-modal').classList.remove('hidden');
+    }
+
+    function hideEditUserModal() {
+        document.getElementById('edit-user-modal').classList.add('hidden');
+    }
+
+    function showPasswordModal(password) {
+        document.getElementById('new-password-display').textContent = password;
+        document.getElementById('password-modal').classList.remove('hidden');
+    }
+
+    function hidePasswordModal() {
+        document.getElementById('password-modal').classList.add('hidden');
+    }
+
+    function showClientCredentialsModal(clientId, clientSecret) {
+        document.getElementById('client-id-display').textContent = clientId;
+        document.getElementById('client-secret-display').textContent = clientSecret;
+        document.getElementById('client-credentials-modal').classList.remove('hidden');
+    }
+
+    function hideClientCredentialsModal() {
+        document.getElementById('client-credentials-modal').classList.add('hidden');
+    }
+
+    function editUser(id, email, role, isActive) {
+        document.getElementById('edit-user-id').value = id;
+        document.getElementById('edit-email').value = email;
+        document.getElementById('edit-role').value = role;
+        document.getElementById('edit-active').checked = isActive;
+        showEditUserModal();
+    }
+
+    async function resetPassword(userId) {
+        if (!confirm('Are you sure you want to reset this user\'s password?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/users/${userId}/reset_password`, {method: 'POST'});
+            if (!response.ok) throw new Error('Failed to reset password');
+            const data = await response.json();
+            showPasswordModal(data.new_password);
+        } catch (error) {
+            showToast('Failed to reset password', 'error');
+        }
+    }
+
+    async function createClientCredentials(userId) {
+        if (!confirm('Create new client credentials for this user?')) return;
+        try {
+            const response = await fetch(`/api/admin/users/${userId}/client_credentials`, {
+                method: 'POST',
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to create client credentials');
+            }
+            const data = await response.json();
+            showClientCredentialsModal(data.client_id, data.client_secret);
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function toggleUserStatus(userId, isActive) {
+        const nextState = !isActive;
+        const label = nextState ? 'activate' : 'block';
+        if (!confirm(`Are you sure you want to ${label} this user?`)) return;
+
+        try {
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({is_active: nextState}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to update user');
+            }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function approveUser(userId) {
+        try {
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: 'approved', rejected_reason: null}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to approve user');
+            }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function rejectUser(userId) {
+        const reason = prompt('Provide a reason for rejection (optional):') || '';
+        try {
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: 'rejected', rejected_reason: reason}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to reject user');
+            }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    document.getElementById('create-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+
+        try {
+            const response = await fetch('/api/admin/users', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to create user');
+            }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    });
+
+    document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const userId = formData.get('user_id');
+        const data = {
+            email: formData.get('email'),
+            role: formData.get('role'),
+            is_active: formData.get('is_active') === 'on',
+        };
+
+        try {
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to update user');
+            }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    });
+
+    ['create-user-modal', 'edit-user-modal', 'password-modal', 'client-credentials-modal'].forEach(id => {
+        document.getElementById(id).addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %}
