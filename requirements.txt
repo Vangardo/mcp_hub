@@ -8,7 +8,7 @@ python-jose[cryptography]>=3.3.0
 bcrypt>=4.0.0
 
 # Pydantic
-pydantic>=2.5.0
+pydantic[email]>=2.5.0
 pydantic-settings>=2.1.0
 
 # HTTP client
