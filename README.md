@@ -1,5 +1,8 @@
 # MCP Hub
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ready-0db7ed.svg)](docker/)
+
 Multi-user MCP gateway that unifies Slack, Teamwork, and Telegram into a single server for GPT and other MCP clients. Users connect integrations once, then consume tools through one MCP endpoint with clear, per-integration configuration.
 
 ## Features
