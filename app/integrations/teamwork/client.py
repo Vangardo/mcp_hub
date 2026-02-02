@@ -283,3 +283,98 @@ class TeamworkClient:
             f"/tasks/{task_id}/comments.json",
             params={"page": page, "pageSize": page_size},
         )
+
+    # === TAGS MANAGEMENT ===
+    async def create_tag(
+        self,
+        name: str,
+        color: Optional[str] = None,
+        project_id: Optional[int] = None,
+    ) -> dict:
+        """Create a new tag. Color format: #RRGGBB"""
+        tag_data: dict[str, Any] = {"name": name}
+        if color:
+            tag_data["color"] = color
+
+        if project_id:
+            return await self._request(
+                "POST",
+                f"/projects/{project_id}/tags.json",
+                json_data={"tag": tag_data},
+            )
+        return await self._request(
+            "POST",
+            "/tags.json",
+            json_data={"tag": tag_data},
+        )
+
+    async def update_tag(
+        self,
+        tag_id: int,
+        name: Optional[str] = None,
+        color: Optional[str] = None,
+    ) -> dict:
+        """Update an existing tag"""
+        tag_data: dict[str, Any] = {}
+        if name:
+            tag_data["name"] = name
+        if color:
+            tag_data["color"] = color
+
+        return await self._request(
+            "PUT",
+            f"/tags/{tag_id}.json",
+            json_data={"tag": tag_data},
+        )
+
+    async def delete_tag(self, tag_id: int) -> dict:
+        """Delete a tag"""
+        return await self._request("DELETE", f"/tags/{tag_id}.json")
+
+    # === BOARD COLUMNS / STAGES ===
+    async def list_columns(self, project_id: int) -> dict:
+        """List board columns (stages) for a project"""
+        return await self._request(
+            "GET",
+            f"/projects/{project_id}/boards/columns.json",
+        )
+
+    async def get_task_board_column(self, task_id: int) -> dict:
+        """Get the board column (stage) of a task"""
+        task = await self.get_task(task_id)
+        return task
+
+    async def move_task_to_column(
+        self,
+        task_id: int,
+        column_id: int,
+        position_after_task: Optional[int] = None,
+    ) -> dict:
+        """Move a task to a different board column (stage)"""
+        card_data: dict[str, Any] = {
+            "columnId": column_id,
+        }
+        if position_after_task:
+            card_data["positionAfterTask"] = position_after_task
+
+        return await self._request(
+            "PUT",
+            f"/boards/columns/cards/{task_id}/move.json",
+            json_data=card_data,
+        )
+
+    # === WORKFLOWS / STAGES (Alternative API) ===
+    async def list_project_stages(self, project_id: int) -> dict:
+        """List workflow stages for a project"""
+        return await self._request(
+            "GET",
+            f"/projects/{project_id}/stages.json",
+        )
+
+    async def update_task_stage(self, task_id: int, stage_id: int) -> dict:
+        """Update task's workflow stage"""
+        return await self._request(
+            "PUT",
+            f"/tasks/{task_id}.json",
+            json_data={"todo-item": {"stageId": stage_id}},
+        )
