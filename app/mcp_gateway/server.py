@@ -188,7 +188,7 @@ async def handle_call_tool(user: dict, params: Optional[dict], provider_filter: 
             "content": [
                 {
                     "type": "text",
-                    "text": json.dumps({"integrations": integrations}, default=str),
+                    "text": json.dumps({"integrations": integrations}, default=str, ensure_ascii=False),
                 }
             ],
         }
@@ -216,7 +216,7 @@ async def handle_call_tool(user: dict, params: Optional[dict], provider_filter: 
             "content": [
                 {
                     "type": "text",
-                    "text": json.dumps(result.data, default=str),
+                    "text": json.dumps(result.data, default=str, ensure_ascii=False),
                 }
             ],
         }

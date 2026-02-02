@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # JWT
     jwt_secret: str = Field(default="change-this-secret-in-production")
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 15
+    access_token_expire_minutes: int = 20 * 24 * 60  # 20 days
     refresh_token_expire_days: int = 30
 
     # Token encryption

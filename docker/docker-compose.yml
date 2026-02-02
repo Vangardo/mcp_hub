@@ -9,6 +9,8 @@ services:
       - "8000:8000"
     volumes:
       - ../data:/data
+      - ../app:/app/app  # Hot reload - код монтируется из хоста
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       # Application
       - DEBUG=false

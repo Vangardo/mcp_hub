@@ -668,7 +668,6 @@ oauth_router = APIRouter(prefix="/oauth", tags=["oauth"])
 
 @oauth_router.post(
     "/token",
-    response_model=TokenResponse,
     responses={
         200: {
             "content": {
@@ -693,29 +692,107 @@ async def oauth_token(
     grant_type: Optional[str] = Form(None),
     client_id: Optional[str] = Form(None),
     client_secret: Optional[str] = Form(None),
+    code: Optional[str] = Form(None),
+    redirect_uri: Optional[str] = Form(None),
+    code_verifier: Optional[str] = Form(None),
 ):
+    # Support both form and JSON
     if grant_type is None:
         try:
             data = await request.json()
             grant_type = data.get("grant_type")
             client_id = data.get("client_id")
             client_secret = data.get("client_secret")
+            code = data.get("code")
+            redirect_uri = data.get("redirect_uri")
+            code_verifier = data.get("code_verifier")
         except Exception:
             pass
 
-    if grant_type != "client_credentials":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unsupported grant_type",
+    print(f"[OAUTH] Token request: grant_type={grant_type}")
+
+    # Handle authorization_code grant (for ChatGPT/MCP clients)
+    if grant_type == "authorization_code":
+        from app.mcp_gateway.oauth_server import _auth_codes, _verify_pkce
+        from fastapi.responses import JSONResponse
+        import time
+
+        if not code:
+            return JSONResponse(
+                {"error": "invalid_request", "error_description": "Missing code"},
+                status_code=400
+            )
+
+        # Get and remove auth code (one-time use)
+        auth_data = _auth_codes.pop(code, None)
+        if not auth_data:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "Invalid or expired code"},
+                status_code=400
+            )
+
+        # Check code expiration (10 minutes)
+        if time.time() - auth_data["created_at"] > 600:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "Code expired"},
+                status_code=400
+            )
+
+        # Verify redirect_uri matches
+        if redirect_uri and redirect_uri != auth_data["redirect_uri"]:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "Redirect URI mismatch"},
+                status_code=400
+            )
+
+        # Verify PKCE if it was used
+        if auth_data["code_challenge"]:
+            if not code_verifier:
+                return JSONResponse(
+                    {"error": "invalid_request", "error_description": "Missing code_verifier"},
+                    status_code=400
+                )
+
+            method = auth_data["code_challenge_method"] or "S256"
+            if not _verify_pkce(code_verifier, auth_data["code_challenge"], method):
+                return JSONResponse(
+                    {"error": "invalid_grant", "error_description": "Invalid code_verifier"},
+                    status_code=400
+                )
+
+        # Generate access token (JWT)
+        access_token = create_access_token(
+            user_id=auth_data["user_id"],
+            email=auth_data["user_email"],
+            role=auth_data["user_role"],
         )
 
-    if not client_id or not client_secret:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="client_id and client_secret are required",
+        print(f"[OAUTH] Token issued for user {auth_data['user_email']}")
+
+        return JSONResponse(
+            content={
+                "access_token": access_token,
+                "token_type": "Bearer",
+                "expires_in": 20 * 24 * 60 * 60,  # 20 days in seconds
+                "scope": auth_data["scope"] or "mcp",
+            },
+            headers={"Cache-Control": "no-store"},
         )
 
-    return await client_token(
-        ClientCredentialsRequest(client_id=client_id, client_secret=client_secret),
-        Response(),
+    # Handle client_credentials grant (for API keys)
+    if grant_type == "client_credentials":
+        if not client_id or not client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="client_id and client_secret are required",
+            )
+
+        return await client_token(
+            ClientCredentialsRequest(client_id=client_id, client_secret=client_secret),
+            Response(),
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Unsupported grant_type: {grant_type}",
     )

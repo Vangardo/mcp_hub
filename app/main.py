@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
 from app.settings import settings
@@ -11,6 +12,7 @@ from app.auth.routes import router as auth_router, oauth_router as oauth_auth_ro
 from app.integrations.routes import router as integrations_router, oauth_router
 from app.integrations.registry import register_integrations
 from app.mcp_gateway import mcp_router
+from app.mcp_gateway.oauth_server import oauth_server_router
 from app.admin import admin_router
 from app.config import config_router
 from app.ui import ui_router
@@ -48,6 +50,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS for OAuth and MCP endpoints (ChatGPT, Claude, etc.)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
 static_path = Path(__file__).parent / "ui" / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
@@ -57,6 +69,7 @@ app.include_router(oauth_auth_router)
 app.include_router(integrations_router)
 app.include_router(oauth_router)
 app.include_router(mcp_router)
+app.include_router(oauth_server_router)
 app.include_router(admin_router)
 app.include_router(config_router)
 app.include_router(ui_router)

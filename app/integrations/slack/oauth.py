@@ -7,12 +7,20 @@ from app.config.store import get_integration_credentials
 SLACK_AUTH_URL = "https://slack.com/oauth/v2/authorize"
 SLACK_TOKEN_URL = "https://slack.com/api/oauth.v2.access"
 
-SLACK_SCOPES = [
+# User scopes - действия от имени пользователя (как в Telegram)
+SLACK_USER_SCOPES = [
     "channels:read",
     "channels:history",
     "chat:write",
-    "search:read",
+    "im:read",
+    "im:write",
+    "im:history",
+    "mpim:read",
+    "mpim:write",
+    "mpim:history",
     "users:read",
+    "search:read.public",
+    "search:read.users",
 ]
 
 
@@ -22,7 +30,8 @@ def get_oauth_start_url(state: str, redirect_uri: str) -> str:
         "client_id": client_id,
         "redirect_uri": redirect_uri,
         "state": state,
-        "scope": ",".join(SLACK_SCOPES),
+        "scope": "",  # Пустой - бот не нужен
+        "user_scope": ",".join(SLACK_USER_SCOPES),
     }
     return f"{SLACK_AUTH_URL}?{urlencode(params)}"
 
@@ -45,11 +54,14 @@ async def exchange_code_for_token(code: str, redirect_uri: str) -> dict:
         if not data.get("ok"):
             raise ValueError(f"Slack OAuth error: {data.get('error')}")
 
+        # User token flow - токен в authed_user
+        authed_user = data.get("authed_user", {})
+
         return {
-            "access_token": data["access_token"],
-            "refresh_token": data.get("refresh_token"),
+            "access_token": authed_user.get("access_token") or data.get("access_token"),
+            "refresh_token": authed_user.get("refresh_token") or data.get("refresh_token"),
             "team": data.get("team", {}),
-            "authed_user": data.get("authed_user", {}),
+            "authed_user": authed_user,
         }
 
 
