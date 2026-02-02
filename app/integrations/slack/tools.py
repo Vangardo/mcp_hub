@@ -70,6 +70,173 @@ SLACK_TOOLS = [
             "required": ["channel"],
         },
     ),
+    # === DIRECT MESSAGES ===
+    ToolDefinition(
+        name="slack.dm.list",
+        description="List all direct message conversations (1:1 DMs with users)",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Max DMs to return", "default": 100},
+                "cursor": {"type": "string", "description": "Pagination cursor"},
+            },
+        },
+    ),
+    ToolDefinition(
+        name="slack.dm.group_list",
+        description="List all group direct messages (multi-person DMs)",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Max group DMs to return", "default": 100},
+                "cursor": {"type": "string", "description": "Pagination cursor"},
+            },
+        },
+    ),
+    ToolDefinition(
+        name="slack.dm.send",
+        description="Send a direct message to a user by their user ID",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string", "description": "User ID to send DM to"},
+                "text": {"type": "string", "description": "Message text"},
+                "thread_ts": {"type": "string", "description": "Thread timestamp for replies"},
+            },
+            "required": ["user_id", "text"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.dm.history",
+        description="Get DM history with a specific user",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string", "description": "User ID"},
+                "limit": {"type": "integer", "description": "Max messages to return", "default": 100},
+                "cursor": {"type": "string", "description": "Pagination cursor"},
+            },
+            "required": ["user_id"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.dm.open",
+        description="Open/get a DM conversation with a user (returns channel ID)",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string", "description": "User ID"},
+            },
+            "required": ["user_id"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.dm.open_group",
+        description="Open/get a group DM with multiple users",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "user_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of user IDs",
+                },
+            },
+            "required": ["user_ids"],
+        },
+    ),
+    # === USER LOOKUP ===
+    ToolDefinition(
+        name="slack.users.find_by_email",
+        description="Find a Slack user by their email address",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "email": {"type": "string", "description": "User's email address"},
+            },
+            "required": ["email"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.users.info",
+        description="Get detailed info about a user",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string", "description": "User ID"},
+            },
+            "required": ["user_id"],
+        },
+    ),
+    # === CANVAS ===
+    ToolDefinition(
+        name="slack.canvas.create",
+        description="Create a new Slack canvas",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Canvas title"},
+                "markdown": {"type": "string", "description": "Initial content in markdown format"},
+            },
+            "required": ["title"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.canvas.edit",
+        description="Edit/append content to a Slack canvas",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "canvas_id": {"type": "string", "description": "Canvas ID"},
+                "markdown": {"type": "string", "description": "Markdown content to append"},
+                "operation": {
+                    "type": "string",
+                    "description": "Operation type",
+                    "enum": ["insert_at_end", "insert_at_start", "replace"],
+                    "default": "insert_at_end",
+                },
+            },
+            "required": ["canvas_id", "markdown"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.canvas.delete",
+        description="Delete a Slack canvas",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "canvas_id": {"type": "string", "description": "Canvas ID"},
+            },
+            "required": ["canvas_id"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.canvas.share",
+        description="Share a canvas with users or channels",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "canvas_id": {"type": "string", "description": "Canvas ID"},
+                "access_level": {
+                    "type": "string",
+                    "description": "Access level",
+                    "enum": ["read", "write"],
+                    "default": "read",
+                },
+                "channel_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Channel IDs to share with",
+                },
+                "user_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "User IDs to share with",
+                },
+            },
+            "required": ["canvas_id"],
+        },
+    ),
 ]
 
 
@@ -118,6 +285,93 @@ async def execute_tool(
                 channel=args["channel"],
                 limit=args.get("limit", 100),
                 cursor=args.get("cursor"),
+            )
+            return ToolResult(success=True, data=result)
+
+        # === DIRECT MESSAGES ===
+        elif tool_name == "slack.dm.list":
+            result = await client.list_dm_conversations(
+                limit=args.get("limit", 100),
+                cursor=args.get("cursor"),
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.dm.group_list":
+            result = await client.list_group_dms(
+                limit=args.get("limit", 100),
+                cursor=args.get("cursor"),
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.dm.send":
+            result = await client.send_dm(
+                user_id=args["user_id"],
+                text=args["text"],
+                thread_ts=args.get("thread_ts"),
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.dm.history":
+            result = await client.get_dm_history(
+                user_id=args["user_id"],
+                limit=args.get("limit", 100),
+                cursor=args.get("cursor"),
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.dm.open":
+            result = await client.open_dm(args["user_id"])
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.dm.open_group":
+            result = await client.open_group_dm(args["user_ids"])
+            return ToolResult(success=True, data=result)
+
+        # === USER LOOKUP ===
+        elif tool_name == "slack.users.find_by_email":
+            result = await client.get_user_by_email(args["email"])
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.users.info":
+            result = await client.get_user_info(args["user_id"])
+            return ToolResult(success=True, data=result)
+
+        # === CANVAS ===
+        elif tool_name == "slack.canvas.create":
+            document_content = None
+            if args.get("markdown"):
+                document_content = {"type": "markdown", "markdown": args["markdown"]}
+            result = await client.create_canvas(
+                title=args["title"],
+                document_content=document_content,
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.canvas.edit":
+            operation = args.get("operation", "insert_at_end")
+            changes = [{
+                "operation": operation,
+                "document_content": {
+                    "type": "markdown",
+                    "markdown": args["markdown"],
+                },
+            }]
+            result = await client.edit_canvas(
+                canvas_id=args["canvas_id"],
+                changes=changes,
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.canvas.delete":
+            result = await client.delete_canvas(args["canvas_id"])
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.canvas.share":
+            result = await client.set_canvas_access(
+                canvas_id=args["canvas_id"],
+                access_level=args.get("access_level", "read"),
+                channel_ids=args.get("channel_ids"),
+                user_ids=args.get("user_ids"),
             )
             return ToolResult(success=True, data=result)
 

@@ -31,7 +31,17 @@ class TeamworkClient:
                 timeout=30.0,
             )
             response.raise_for_status()
-            return response.json()
+
+            # Handle empty response (204 No Content or empty body)
+            if response.status_code == 204 or not response.content:
+                return {"success": True, "status_code": response.status_code}
+
+            # Try to parse JSON
+            try:
+                return response.json()
+            except Exception:
+                # If JSON parsing fails, return raw text
+                return {"success": True, "status_code": response.status_code, "text": response.text}
 
     async def list_projects(self, page: int = 1, page_size: int = 50) -> dict:
         return await self._request(
@@ -54,6 +64,7 @@ class TeamworkClient:
         status: Optional[str] = None,
         due_after: Optional[str] = None,
         due_before: Optional[str] = None,
+        include_today: bool = False,
         page: int = 1,
         page_size: int = 50,
     ) -> dict:
@@ -62,14 +73,42 @@ class TeamworkClient:
         if project_id:
             params["projectId"] = project_id
         if assignee_id:
-            params["responsiblePartyId"] = assignee_id
+            params["responsible-party-ids"] = assignee_id
         if status:
             params["filter"] = status
+        # Teamwork uses different date filter params
         if due_after:
-            params["startDate"] = due_after
+            params["dueDateFrom"] = due_after
         if due_before:
-            params["endDate"] = due_before
+            params["dueDateTo"] = due_before
+        if include_today:
+            params["includeToday"] = "true"
+        # Include completed optionally
+        params["includeCompletedTasks"] = "false"
 
+        return await self._request("GET", "/tasks.json", params=params)
+
+    async def list_tasks_due_today(self, assignee_id: Optional[int] = None) -> dict:
+        """Get tasks due today"""
+        from datetime import date
+        today = date.today().strftime("%Y%m%d")
+        return await self.list_tasks(
+            due_after=today,
+            due_before=today,
+            assignee_id=assignee_id,
+            include_today=True,
+        )
+
+    async def list_overdue_tasks(self, assignee_id: Optional[int] = None) -> dict:
+        """Get overdue tasks"""
+        from datetime import date, timedelta
+        yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
+        params: dict[str, Any] = {
+            "filter": "overdue",
+            "includeCompletedTasks": "false",
+        }
+        if assignee_id:
+            params["responsible-party-ids"] = assignee_id
         return await self._request("GET", "/tasks.json", params=params)
 
     async def create_task(
@@ -139,10 +178,24 @@ class TeamworkClient:
     async def list_tags(self, project_id: Optional[int] = None) -> dict:
         """List all tags, optionally filtered by project"""
         if project_id:
-            return await self._request(
-                "GET", f"/projects/{project_id}/tags.json"
-            )
-        return await self._request("GET", "/tags.json")
+            try:
+                return await self._request(
+                    "GET", f"/projects/{project_id}/tags.json"
+                )
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code in (400, 404):
+                    return await self._request(
+                        "GET",
+                        "/projects/api/v3/tags.json",
+                        params={"projectId": project_id},
+                    )
+                raise
+        try:
+            return await self._request("GET", "/tags.json")
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (400, 404):
+                return await self._request("GET", "/projects/api/v3/tags.json")
+            raise
 
     async def get_task(self, task_id: int) -> dict:
         """Get single task details"""
@@ -297,16 +350,35 @@ class TeamworkClient:
             tag_data["color"] = color
 
         if project_id:
+            try:
+                return await self._request(
+                    "POST",
+                    f"/projects/{project_id}/tags.json",
+                    json_data={"tag": tag_data},
+                )
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code in (400, 404):
+                    tag_data["projectId"] = project_id
+                    return await self._request(
+                        "POST",
+                        "/projects/api/v3/tags.json",
+                        json_data={"tag": tag_data},
+                    )
+                raise
+        try:
             return await self._request(
                 "POST",
-                f"/projects/{project_id}/tags.json",
+                "/tags.json",
                 json_data={"tag": tag_data},
             )
-        return await self._request(
-            "POST",
-            "/tags.json",
-            json_data={"tag": tag_data},
-        )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (400, 404):
+                return await self._request(
+                    "POST",
+                    "/projects/api/v3/tags.json",
+                    json_data={"tag": tag_data},
+                )
+            raise
 
     async def update_tag(
         self,
@@ -321,60 +393,155 @@ class TeamworkClient:
         if color:
             tag_data["color"] = color
 
-        return await self._request(
-            "PUT",
-            f"/tags/{tag_id}.json",
-            json_data={"tag": tag_data},
-        )
+        try:
+            return await self._request(
+                "PUT",
+                f"/tags/{tag_id}.json",
+                json_data={"tag": tag_data},
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (400, 404):
+                return await self._request(
+                    "PUT",
+                    f"/projects/api/v3/tags/{tag_id}.json",
+                    json_data={"tag": tag_data},
+                )
+            raise
 
     async def delete_tag(self, tag_id: int) -> dict:
         """Delete a tag"""
-        return await self._request("DELETE", f"/tags/{tag_id}.json")
+        try:
+            return await self._request("DELETE", f"/tags/{tag_id}.json")
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (400, 404):
+                return await self._request(
+                    "DELETE",
+                    f"/projects/api/v3/tags/{tag_id}.json",
+                )
+            raise
 
-    # === BOARD COLUMNS / STAGES ===
-    async def list_columns(self, project_id: int) -> dict:
-        """List board columns (stages) for a project"""
+    # === WORKFLOWS / STAGES ===
+    # Teamwork использует Workflows API для board view
+    # https://apidocs.teamwork.com/guides/teamwork/workflows-api-getting-started-guide
+
+    async def list_workflows(self, project_id: int) -> dict:
+        """List all workflows in a project"""
         return await self._request(
             "GET",
-            f"/projects/{project_id}/boards/columns.json",
+            f"/projects/api/v3/projects/{project_id}/workflows.json",
         )
 
-    async def get_task_board_column(self, task_id: int) -> dict:
-        """Get the board column (stage) of a task"""
-        task = await self.get_task(task_id)
-        return task
+    async def get_workflow_stages(self, workflow_id: int) -> dict:
+        """Get stages for a specific workflow"""
+        return await self._request(
+            "GET",
+            f"/projects/api/v3/workflows/{workflow_id}/stages.json",
+        )
 
-    async def move_task_to_column(
+    async def list_project_stages(self, project_id: int) -> dict:
+        """List all stages (columns) for a project's workflow.
+
+        Returns stages with workflow_id included for use in move operations.
+        """
+        # Сначала получаем workflows проекта
+        workflows = await self.list_workflows(project_id)
+
+        # Извлекаем workflow ID
+        workflow_list = workflows.get("workflows", [])
+        if not workflow_list:
+            # Попробуем другой формат ответа
+            workflow_list = workflows.get("data", [])
+
+        if not workflow_list:
+            return {"stages": [], "workflow_id": None, "message": "No workflows found for this project"}
+
+        # Берём первый (обычно единственный) workflow
+        workflow_id = None
+        if isinstance(workflow_list, list) and workflow_list:
+            workflow_id = workflow_list[0].get("id")
+        elif isinstance(workflow_list, dict):
+            workflow_id = workflow_list.get("id")
+
+        if not workflow_id:
+            return {"stages": [], "workflow_id": None, "message": "Could not find workflow ID"}
+
+        # Получаем stages этого workflow
+        stages_result = await self.get_workflow_stages(workflow_id)
+
+        # Добавляем workflow_id в результат для удобства
+        stages_result["workflow_id"] = workflow_id
+        return stages_result
+
+    async def list_columns(self, project_id: int) -> dict:
+        """Alias for list_project_stages"""
+        return await self.list_project_stages(project_id)
+
+    async def get_task_with_stage(self, task_id: int) -> dict:
+        """Get task details including workflow stage info (API v3)"""
+        return await self._request(
+            "GET",
+            f"/projects/api/v3/tasks/{task_id}.json",
+        )
+
+    async def move_task_to_stage(
         self,
         task_id: int,
-        column_id: int,
-        position_after_task: Optional[int] = None,
+        stage_id: int,
+        workflow_id: Optional[int] = None,
+        project_id: Optional[int] = None,
     ) -> dict:
-        """Move a task to a different board column (stage)"""
-        card_data: dict[str, Any] = {
-            "columnId": column_id,
-        }
-        if position_after_task:
-            card_data["positionAfterTask"] = position_after_task
+        """Move a task to a different workflow stage.
 
+        Uses POST /projects/api/v3/workflows/{workflowId}/stages/{stageId}/tasks.json
+        with body: {"taskIds": [taskId]}
+
+        This is the correct endpoint for actually moving cards on the board!
+        """
+        # Если workflow_id не передан, нужно его получить
+        if not workflow_id:
+            if project_id:
+                workflows = await self.list_workflows(project_id)
+                workflow_list = workflows.get("workflows", []) or workflows.get("data", [])
+                if workflow_list:
+                    workflow_id = workflow_list[0].get("id")
+
+            if not workflow_id:
+                raise ValueError("workflow_id is required. Get it from workflows.list first.")
+
+        # POST к stages endpoint - это реально двигает карточки!
         return await self._request(
-            "PUT",
-            f"/boards/columns/cards/{task_id}/move.json",
-            json_data=card_data,
+            "POST",
+            f"/projects/api/v3/workflows/{workflow_id}/stages/{stage_id}/tasks.json",
+            json_data={
+                "taskIds": [task_id],
+            },
         )
 
-    # === WORKFLOWS / STAGES (Alternative API) ===
-    async def list_project_stages(self, project_id: int) -> dict:
-        """List workflow stages for a project"""
+    async def move_tasks_to_stage(
+        self,
+        task_ids: list[int],
+        stage_id: int,
+        workflow_id: int,
+    ) -> dict:
+        """Move multiple tasks to a workflow stage at once"""
+        # Для нескольких задач используем POST к stages endpoint
         return await self._request(
-            "GET",
-            f"/projects/{project_id}/stages.json",
+            "POST",
+            f"/projects/api/v3/workflows/{workflow_id}/stages/{stage_id}/tasks.json",
+            json_data={
+                "taskIds": task_ids,
+            },
         )
 
-    async def update_task_stage(self, task_id: int, stage_id: int) -> dict:
-        """Update task's workflow stage"""
-        return await self._request(
-            "PUT",
-            f"/tasks/{task_id}.json",
-            json_data={"todo-item": {"stageId": stage_id}},
-        )
+    async def update_task_stage(self, task_id: int, stage_id: int, workflow_id: Optional[int] = None, project_id: Optional[int] = None) -> dict:
+        """Update task's workflow stage (alias for move_task_to_stage)"""
+        return await self.move_task_to_stage(task_id, stage_id, workflow_id, project_id)
+
+    # Aliases для совместимости
+    async def list_boards(self, project_id: int) -> dict:
+        """Alias - в Teamwork это называется workflows"""
+        return await self.list_workflows(project_id)
+
+    async def move_task_to_column(self, task_id: int, column_id: int) -> dict:
+        """Alias - columns это stages в workflows"""
+        return await self.move_task_to_stage(task_id, column_id)

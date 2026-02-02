@@ -7,20 +7,35 @@ from app.config.store import get_integration_credentials
 SLACK_AUTH_URL = "https://slack.com/oauth/v2/authorize"
 SLACK_TOKEN_URL = "https://slack.com/api/oauth.v2.access"
 
-# User scopes - действия от имени пользователя (как в Telegram)
+# User scopes - действия от имени пользователя
+# Эти scopes должны совпадать с настройками в Slack App
 SLACK_USER_SCOPES = [
+    # Channels - публичные
     "channels:read",
     "channels:history",
+    # Groups - приватные каналы
+    "groups:read",
+    "groups:history",
+    # Chat
     "chat:write",
+    # Direct Messages (1:1)
     "im:read",
     "im:write",
     "im:history",
+    # Group DMs (multi-person)
     "mpim:read",
     "mpim:write",
     "mpim:history",
+    # Users
     "users:read",
-    "search:read.public",
-    "search:read.users",
+    "users:read.email",
+    # Search
+    "search:read.public",   # публичные каналы
+    "search:read.files",    # файлы
+    "search:read.users",    # пользователи
+    # Canvas
+    "canvases:read",
+    "canvases:write",
 ]
 
 
