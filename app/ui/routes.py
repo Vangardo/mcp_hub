@@ -147,7 +147,7 @@ async def login_submit(
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=15 * 60,
+        max_age=7 * 24 * 60 * 60,  # 7 days
     )
     response.set_cookie(
         key="refresh_token",

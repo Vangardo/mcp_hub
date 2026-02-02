@@ -4,15 +4,12 @@
             <div class="flex">
                 <div class="flex flex-shrink-0 items-center">
                     <a href="/" class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                        </div>
-                        <span class="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">MCP Hub</span>
+                        <img src="/static/MCP_hub.svg" alt="MCP Hub" class="w-8 h-8 rounded-lg">
+                        <span class="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent hidden sm:block">MCP Hub</span>
                     </a>
                 </div>
-                <div class="hidden sm:ml-8 sm:flex sm:space-x-1">
+                <!-- Desktop navigation -->
+                <div class="hidden md:ml-8 md:flex md:space-x-1">
                     <a href="/" class="{% if active_page == 'integrations' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
@@ -36,23 +33,26 @@
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
-                        Audit Log
+                        Audit
                     </a>
                     <a href="/admin/settings" class="{% if active_page == 'settings' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.983 13.6a2.6 2.6 0 100-5.2 2.6 2.6 0 000 5.2zM19.4 12a7.4 7.4 0 00-.1-1l2.1-1.7-2-3.4-2.5.9a7.5 7.5 0 00-1.7-1L13.8 2h-3.6l-.4 2.8a7.5 7.5 0 00-1.7 1l-2.5-.9-2 3.4 2.1 1.7a7.4 7.4 0 000 2l-2.1 1.7 2 3.4 2.5-.9a7.5 7.5 0 001.7 1l.4 2.8h3.6l.4-2.8a7.5 7.5 0 001.7-1l2.5.9 2-3.4-2.1-1.7c.1-.3.1-.7.1-1z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                         Settings
                     </a>
                     {% endif %}
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
+
+            <!-- Desktop user info -->
+            <div class="hidden md:flex items-center space-x-4">
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
                         <span class="text-sm font-medium text-slate-600">{{ user.email[0]|upper }}</span>
                     </div>
-                    <span class="text-sm text-slate-600 hidden sm:block">{{ user.email }}</span>
+                    <span class="text-sm text-slate-600">{{ user.email }}</span>
                     {% if user.role == 'admin' %}
                     <span class="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">Admin</span>
                     {% endif %}
@@ -62,10 +62,102 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        <span class="hidden sm:inline">Logout</span>
+                        <span>Logout</span>
                     </button>
                 </form>
             </div>
+
+            <!-- Mobile menu button -->
+            <div class="flex items-center md:hidden">
+                <button type="button" onclick="toggleMobileMenu()" class="inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors" aria-expanded="false">
+                    <span class="sr-only">Open main menu</span>
+                    <svg id="mobile-menu-icon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    <svg id="mobile-menu-close-icon" class="hidden h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200">
+        <div class="px-4 py-3 space-y-1">
+            <a href="/" class="{% if active_page == 'integrations' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                Integrations
+            </a>
+            <a href="/account" class="{% if active_page == 'account' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.878 6.196 9 9 0 015.12 17.804zM15 11a3 3 0 11-6 0 3 3 0 016 0zM7 20a7 7 0 0110 0"/>
+                </svg>
+                Account
+            </a>
+            {% if user.role == 'admin' %}
+            <div class="border-t border-slate-200 pt-2 mt-2">
+                <p class="px-3 py-1 text-xs font-medium text-slate-400 uppercase">Admin</p>
+            </div>
+            <a href="/admin/users" class="{% if active_page == 'users' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                Users
+            </a>
+            <a href="/admin/audit" class="{% if active_page == 'audit' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                Audit Log
+            </a>
+            <a href="/admin/settings" class="{% if active_page == 'settings' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Settings
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Mobile user info -->
+        <div class="border-t border-slate-200 px-4 py-4">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                    <span class="text-sm font-medium text-slate-600">{{ user.email[0]|upper }}</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">{{ user.email }}</p>
+                    {% if user.role == 'admin' %}
+                    <span class="text-xs text-primary-600">Administrator</span>
+                    {% else %}
+                    <span class="text-xs text-slate-500">User</span>
+                    {% endif %}
+                </div>
+            </div>
+            <form action="/logout" method="post">
+                <button type="submit" class="w-full flex items-center justify-center px-4 py-2.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Sign out
+                </button>
+            </form>
         </div>
     </div>
 </nav>
+
+<script>
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('mobile-menu-icon');
+    const closeIcon = document.getElementById('mobile-menu-close-icon');
+
+    menu.classList.toggle('hidden');
+    menuIcon.classList.toggle('hidden');
+    closeIcon.classList.toggle('hidden');
+}
+</script>

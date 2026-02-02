@@ -210,7 +210,7 @@ async def login(data: LoginRequest, response: Response):
             httponly=True,
             secure=False,
             samesite="lax",
-            max_age=15 * 60
+            max_age=7 * 24 * 60 * 60  # 7 days
         )
         response.set_cookie(
             key="refresh_token",
@@ -223,7 +223,7 @@ async def login(data: LoginRequest, response: Response):
 
         return TokenResponse(
             access_token=access_token,
-            expires_in=15 * 60
+            expires_in=7 * 24 * 60 * 60  # 7 days
         )
 
 
@@ -288,7 +288,7 @@ async def refresh(
             httponly=True,
             secure=False,
             samesite="lax",
-            max_age=15 * 60
+            max_age=7 * 24 * 60 * 60  # 7 days
         )
         response.set_cookie(
             key="refresh_token",
@@ -301,7 +301,7 @@ async def refresh(
 
         return TokenResponse(
             access_token=access_token,
-            expires_in=15 * 60
+            expires_in=7 * 24 * 60 * 60  # 7 days
         )
 
 
