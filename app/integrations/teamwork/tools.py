@@ -93,8 +93,21 @@ async def _resolve_existing_tags(
     if not names:
         return [], []
 
-    tags_data = await client.list_tags(project_id=project_id)
-    tag_items = _normalize_items(_extract_items(tags_data, ["tags", "tag"]))
+    tag_items: list[dict] = []
+
+    # If project_id is provided, Teamwork may return only project-specific tags.
+    # Merge with global tags so we can resolve both scopes.
+    try:
+        tags_data = await client.list_tags(project_id=project_id)
+        tag_items.extend(_normalize_items(_extract_items(tags_data, ["tags", "tag"])))
+    except Exception:
+        pass
+
+    try:
+        global_tags_data = await client.list_tags(project_id=None)
+        tag_items.extend(_normalize_items(_extract_items(global_tags_data, ["tags", "tag"])))
+    except Exception:
+        pass
     existing = {}
     for item in tag_items:
         name = item.get("name")

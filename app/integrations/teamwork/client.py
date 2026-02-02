@@ -134,7 +134,8 @@ class TeamworkClient:
         if priority:
             task_data["priority"] = priority
         if tags:
-            task_data["tag-ids"] = ",".join(str(t) for t in tags)
+            # Teamwork API expects tagIds (comma-separated)
+            task_data["tagIds"] = ",".join(str(t) for t in tags)
         if estimated_minutes:
             task_data["estimated-minutes"] = estimated_minutes
 
@@ -157,7 +158,8 @@ class TeamworkClient:
         if "priority" in fields:
             task_data["priority"] = fields["priority"]
         if "tags" in fields:
-            task_data["tag-ids"] = ",".join(str(t) for t in fields["tags"])
+            # Teamwork API expects tagIds (comma-separated)
+            task_data["tagIds"] = ",".join(str(t) for t in fields["tags"])
         if "estimated_minutes" in fields:
             task_data["estimated-minutes"] = fields["estimated_minutes"]
 
