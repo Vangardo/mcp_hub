@@ -61,6 +61,44 @@ def get_user_connected_providers(user_id: int) -> list[str]:
     with get_db() as conn:
         return list_connected_providers(conn, user_id)
 
+
+def normalize_tool_name_format(value: Optional[str]) -> str:
+    if not value:
+        return "dot"
+    value = value.strip().lower()
+    if value in {"flat", "underscore", "underscored", "snake"}:
+        return "flat"
+    return "dot"
+
+
+def is_claude_user_agent(user_agent: str) -> bool:
+    if not user_agent:
+        return False
+    ua = user_agent.lower()
+    return "claude" in ua or "anthropic" in ua
+
+
+def resolve_tool_name_format(request: Request) -> str:
+    header_format = request.headers.get("X-MCP-Tool-Format")
+    if header_format:
+        return normalize_tool_name_format(header_format)
+    if is_claude_user_agent(request.headers.get("User-Agent", "")):
+        return "flat"
+    return "dot"
+
+
+def format_tool_name(name: str, name_format: str) -> str:
+    if name_format == "flat":
+        return name.replace(".", "__")
+    return name
+
+
+def unformat_tool_name(name: str, name_format: str) -> str:
+    if name_format == "flat" and "." not in name:
+        return name.replace("__", ".")
+    return name
+
+
 HUB_TOOLS = [
     {
         "name": "hub.integrations.list",
@@ -76,7 +114,11 @@ HUB_TOOLS = [
 ]
 
 
-def get_available_tools(user_id: int, provider_filter: Optional[str] = None) -> list[dict]:
+def get_available_tools(
+    user_id: int,
+    provider_filter: Optional[str] = None,
+    name_format: str = "dot",
+) -> list[dict]:
     connected_providers = get_user_connected_providers(user_id)
     tools = []
 
@@ -84,7 +126,14 @@ def get_available_tools(user_id: int, provider_filter: Optional[str] = None) -> 
         connected_providers = [p for p in connected_providers if p == provider_filter]
 
     if not provider_filter:
-        tools.extend(HUB_TOOLS)
+        for tool in HUB_TOOLS:
+            tools.append(
+                {
+                    "name": format_tool_name(tool["name"], name_format),
+                    "description": tool["description"],
+                    "inputSchema": tool["inputSchema"],
+                }
+            )
 
     for integration in integration_registry.list_configured():
         if integration.name not in connected_providers:
@@ -92,7 +141,7 @@ def get_available_tools(user_id: int, provider_filter: Optional[str] = None) -> 
 
         for tool in integration.get_tools():
             tools.append({
-                "name": tool.name,
+                "name": format_tool_name(tool.name, name_format),
                 "description": tool.description,
                 "inputSchema": tool.input_schema,
             })
@@ -100,7 +149,12 @@ def get_available_tools(user_id: int, provider_filter: Optional[str] = None) -> 
     return tools
 
 
-async def handle_initialize(user: dict, params: Optional[dict], provider_filter: Optional[str] = None) -> dict:
+async def handle_initialize(
+    user: dict,
+    params: Optional[dict],
+    provider_filter: Optional[str] = None,
+    name_format: str = "dot",
+) -> dict:
     safe_audit_log(
         user_id=user["id"],
         provider=provider_filter,
@@ -121,8 +175,13 @@ async def handle_initialize(user: dict, params: Optional[dict], provider_filter:
     }
 
 
-async def handle_list_tools(user: dict, params: Optional[dict], provider_filter: Optional[str] = None) -> dict:
-    tools = get_available_tools(user["id"], provider_filter)
+async def handle_list_tools(
+    user: dict,
+    params: Optional[dict],
+    provider_filter: Optional[str] = None,
+    name_format: str = "dot",
+) -> dict:
+    tools = get_available_tools(user["id"], provider_filter, name_format=name_format)
     safe_audit_log(
         user_id=user["id"],
         provider=provider_filter,
@@ -133,7 +192,12 @@ async def handle_list_tools(user: dict, params: Optional[dict], provider_filter:
     )
     return {"tools": tools}
 
-async def handle_call_tool(user: dict, params: Optional[dict], provider_filter: Optional[str] = None) -> dict:
+async def handle_call_tool(
+    user: dict,
+    params: Optional[dict],
+    provider_filter: Optional[str] = None,
+    name_format: str = "dot",
+) -> dict:
     if not params:
         raise ValueError("Missing params")
 
@@ -142,6 +206,8 @@ async def handle_call_tool(user: dict, params: Optional[dict], provider_filter: 
 
     if not tool_name:
         raise ValueError("Missing tool name")
+
+    tool_name = unformat_tool_name(tool_name, name_format)
 
     if tool_name == "hub.integrations.list":
         connected_providers = set(get_user_connected_providers(user["id"]))
@@ -243,6 +309,7 @@ async def process_mcp_request(
     user: dict,
     request: MCPRequest,
     provider_filter: Optional[str] = None,
+    name_format: str = "dot",
 ) -> MCPResponse:
     handler = METHOD_HANDLERS.get(request.method)
 
@@ -256,7 +323,7 @@ async def process_mcp_request(
         )
 
     try:
-        result = await handler(user, request.params, provider_filter)
+        result = await handler(user, request.params, provider_filter, name_format)
         return MCPResponse(id=request.id, result=result)
     except Exception as e:
         return MCPResponse(
@@ -383,10 +450,11 @@ async def mcp_endpoint(
         )
 
     provider_filter = request.headers.get("X-MCP-Provider")
+    name_format = resolve_tool_name_format(request)
 
     body = await request.json()
     mcp_request = MCPRequest(**body)
-    response = await process_mcp_request(user, mcp_request, provider_filter)
+    response = await process_mcp_request(user, mcp_request, provider_filter, name_format)
 
     return response.model_dump(exclude_none=True)
 
@@ -430,6 +498,7 @@ async def mcp_sse_endpoint(
         )
 
     provider_filter = request.headers.get("X-MCP-Provider")
+    _ = resolve_tool_name_format(request)
 
     accept_header = request.headers.get("accept", "")
     if "text/event-stream" not in accept_header.lower():
