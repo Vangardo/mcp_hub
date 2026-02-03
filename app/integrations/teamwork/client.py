@@ -60,7 +60,7 @@ class TeamworkClient:
     async def list_tasks(
         self,
         project_id: Optional[int] = None,
-        assignee_id: Optional[int] = None,
+        assignee_ids: Optional[list[int]] = None,
         status: Optional[str] = None,
         due_after: Optional[str] = None,
         due_before: Optional[str] = None,
@@ -72,8 +72,8 @@ class TeamworkClient:
 
         if project_id:
             params["projectId"] = project_id
-        if assignee_id:
-            params["responsible-party-ids"] = assignee_id
+        if assignee_ids:
+            params["responsible-party-ids"] = ",".join(str(uid) for uid in assignee_ids)
         if status:
             params["filter"] = status
         # Teamwork uses different date filter params
@@ -88,18 +88,18 @@ class TeamworkClient:
 
         return await self._request("GET", "/tasks.json", params=params)
 
-    async def list_tasks_due_today(self, assignee_id: Optional[int] = None) -> dict:
+    async def list_tasks_due_today(self, assignee_ids: Optional[list[int]] = None) -> dict:
         """Get tasks due today"""
         from datetime import date
         today = date.today().strftime("%Y%m%d")
         return await self.list_tasks(
             due_after=today,
             due_before=today,
-            assignee_id=assignee_id,
+            assignee_ids=assignee_ids,
             include_today=True,
         )
 
-    async def list_overdue_tasks(self, assignee_id: Optional[int] = None) -> dict:
+    async def list_overdue_tasks(self, assignee_ids: Optional[list[int]] = None) -> dict:
         """Get overdue tasks"""
         from datetime import date, timedelta
         yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
@@ -107,8 +107,8 @@ class TeamworkClient:
             "filter": "overdue",
             "includeCompletedTasks": "false",
         }
-        if assignee_id:
-            params["responsible-party-ids"] = assignee_id
+        if assignee_ids:
+            params["responsible-party-ids"] = ",".join(str(uid) for uid in assignee_ids)
         return await self._request("GET", "/tasks.json", params=params)
 
     async def create_task(
@@ -117,7 +117,7 @@ class TeamworkClient:
         tasklist_id: int,
         content: str,
         description: Optional[str] = None,
-        assignee_id: Optional[int] = None,
+        assignee_ids: Optional[list[int]] = None,
         due_date: Optional[str] = None,
         priority: Optional[str] = None,
         tags: Optional[list[int]] = None,
@@ -127,8 +127,8 @@ class TeamworkClient:
 
         if description:
             task_data["description"] = description
-        if assignee_id:
-            task_data["responsible-party-id"] = str(assignee_id)
+        if assignee_ids:
+            task_data["responsible-party-ids"] = ",".join(str(uid) for uid in assignee_ids)
         if due_date:
             task_data["due-date"] = due_date
         if priority:
@@ -146,28 +146,47 @@ class TeamworkClient:
         )
 
     async def update_task(self, task_id: int, **fields) -> dict:
+        # Assignees must go through V3 PATCH — V1 PUT adds instead of replacing
+        assignee_ids = fields.pop("assignee_ids", None)
+
         task_data = {}
         if "content" in fields:
             task_data["content"] = fields["content"]
         if "description" in fields:
             task_data["description"] = fields["description"]
-        if "assignee_id" in fields:
-            task_data["responsible-party-id"] = str(fields["assignee_id"])
         if "due_date" in fields:
             task_data["due-date"] = fields["due_date"]
         if "priority" in fields:
             task_data["priority"] = fields["priority"]
         if "tags" in fields:
-            # Teamwork API expects tagIds (comma-separated)
             task_data["tagIds"] = ",".join(str(t) for t in fields["tags"])
         if "estimated_minutes" in fields:
             task_data["estimated-minutes"] = fields["estimated_minutes"]
 
-        return await self._request(
-            "PUT",
-            f"/tasks/{task_id}.json",
-            json_data={"todo-item": task_data},
-        )
+        result = {}
+        # V1 PUT for non-assignee fields
+        if task_data:
+            result = await self._request(
+                "PUT",
+                f"/tasks/{task_id}.json",
+                json_data={"todo-item": task_data},
+            )
+
+        # V3 PATCH for assignees — properly replaces the full list
+        if assignee_ids is not None:
+            result = await self._request(
+                "PATCH",
+                f"/projects/api/v3/tasks/{task_id}.json",
+                json_data={
+                    "task": {
+                        "assignees": {
+                            "userIds": assignee_ids,
+                        },
+                    },
+                },
+            )
+
+        return result or {"STATUS": "OK"}
 
     async def complete_task(self, task_id: int) -> dict:
         return await self._request("PUT", f"/tasks/{task_id}/complete.json")
@@ -209,7 +228,7 @@ class TeamworkClient:
         parent_task_id: int,
         content: str,
         description: Optional[str] = None,
-        assignee_id: Optional[int] = None,
+        assignee_ids: Optional[list[int]] = None,
         due_date: Optional[str] = None,
         estimated_minutes: Optional[int] = None,
     ) -> dict:
@@ -217,8 +236,8 @@ class TeamworkClient:
         task_data: dict[str, Any] = {"content": content}
         if description:
             task_data["description"] = description
-        if assignee_id:
-            task_data["responsible-party-id"] = str(assignee_id)
+        if assignee_ids:
+            task_data["responsible-party-ids"] = ",".join(str(uid) for uid in assignee_ids)
         if due_date:
             task_data["due-date"] = due_date
         if estimated_minutes:
@@ -226,7 +245,7 @@ class TeamworkClient:
 
         return await self._request(
             "POST",
-            f"/tasks/{parent_task_id}/subtasks.json",
+            f"/tasks/{parent_task_id}.json",
             json_data={"todo-item": task_data},
         )
 

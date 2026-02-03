@@ -6,7 +6,7 @@ from app.integrations.slack.client import SlackClient
 SLACK_TOOLS = [
     ToolDefinition(
         name="slack.channels.list",
-        description="List all channels in Slack workspace",
+        description="List all channels in Slack workspace. Returns channel IDs and names needed for posting messages and getting history.",
         input_schema={
             "type": "object",
             "properties": {
@@ -22,7 +22,7 @@ SLACK_TOOLS = [
     ),
     ToolDefinition(
         name="slack.users.list",
-        description="List all users in Slack workspace",
+        description="List all users in Slack workspace. Returns user IDs needed for sending DMs, finding users, and sharing canvases.",
         input_schema={
             "type": "object",
             "properties": {
@@ -171,7 +171,7 @@ SLACK_TOOLS = [
     # === CANVAS ===
     ToolDefinition(
         name="slack.canvas.create",
-        description="Create a new Slack canvas",
+        description="Create a new Slack canvas (collaborative document). Returns canvas_id for further operations like editing, sharing, or looking up sections.",
         input_schema={
             "type": "object",
             "properties": {
@@ -183,7 +183,7 @@ SLACK_TOOLS = [
     ),
     ToolDefinition(
         name="slack.canvas.edit",
-        description="Edit/append content to a Slack canvas",
+        description="Edit content in a Slack canvas. Use 'replace' to overwrite all content, 'insert_at_end' to append, 'insert_at_start' to prepend. Content is in markdown format.",
         input_schema={
             "type": "object",
             "properties": {
@@ -212,7 +212,7 @@ SLACK_TOOLS = [
     ),
     ToolDefinition(
         name="slack.canvas.share",
-        description="Share a canvas with users or channels",
+        description="Share a canvas with users or channels. Set access_level to 'read' for view-only or 'write' for editing permissions.",
         input_schema={
             "type": "object",
             "properties": {
@@ -233,6 +233,37 @@ SLACK_TOOLS = [
                     "items": {"type": "string"},
                     "description": "User IDs to share with",
                 },
+            },
+            "required": ["canvas_id"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.canvas.sections_lookup",
+        description="Find sections in a Slack canvas by heading type or text content. Use this to read canvas content and get section IDs for targeted editing. Sections can be filtered by heading level (h1, h2) or by text they contain.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "canvas_id": {"type": "string", "description": "Canvas ID"},
+                "section_types": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Filter by section type: 'h1', 'h2', or 'any_header'",
+                },
+                "contains_text": {
+                    "type": "string",
+                    "description": "Filter sections containing this text",
+                },
+            },
+            "required": ["canvas_id"],
+        },
+    ),
+    ToolDefinition(
+        name="slack.canvas.access_list",
+        description="List who has access to a Slack canvas. Returns users and channels with their access levels (read/write).",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "canvas_id": {"type": "string", "description": "Canvas ID"},
             },
             "required": ["canvas_id"],
         },
@@ -373,6 +404,18 @@ async def execute_tool(
                 channel_ids=args.get("channel_ids"),
                 user_ids=args.get("user_ids"),
             )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.canvas.sections_lookup":
+            result = await client.lookup_canvas_sections(
+                canvas_id=args["canvas_id"],
+                section_types=args.get("section_types"),
+                contains_text=args.get("contains_text"),
+            )
+            return ToolResult(success=True, data=result)
+
+        elif tool_name == "slack.canvas.access_list":
+            result = await client.list_canvas_access(args["canvas_id"])
             return ToolResult(success=True, data=result)
 
         else:

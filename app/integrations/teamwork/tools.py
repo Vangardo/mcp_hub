@@ -174,7 +174,7 @@ async def _ensure_tags(
 TEAMWORK_TOOLS = [
     ToolDefinition(
         name="teamwork.projects.list",
-        description="List all projects in Teamwork",
+        description="List all projects in Teamwork. Returns project IDs and names. Use project ID with tasklists.list to get task lists, or tasks.list to filter tasks.",
         input_schema={
             "type": "object",
             "properties": {
@@ -185,7 +185,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.people.list",
-        description="List all people/users in Teamwork",
+        description="List all people/users in Teamwork. Returns user IDs and names needed for task assignment (assignee_ids) and filtering.",
         input_schema={
             "type": "object",
             "properties": {
@@ -196,12 +196,16 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.list",
-        description="List tasks in Teamwork with optional filters. Use dueDateFrom/dueDateTo for deadline filtering",
+        description="List tasks in Teamwork with optional filters. Use dueDateFrom/dueDateTo for deadline filtering. Use people.list to get user IDs for assignee filtering.",
         input_schema={
             "type": "object",
             "properties": {
-                "project_id": {"type": "integer", "description": "Filter by project ID"},
-                "assignee_id": {"type": "integer", "description": "Filter by assignee ID"},
+                "project_id": {"type": "integer", "description": "Filter by project ID (from projects.list)"},
+                "assignee_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Filter by assignee user IDs (from people.list). Pass one or more user IDs.",
+                },
                 "status": {
                     "type": "string",
                     "description": "Filter by status",
@@ -216,27 +220,35 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.due_today",
-        description="Get tasks due today (shortcut for filtering by today's date)",
+        description="Get tasks due today (shortcut for filtering by today's date). Use people.list to get user IDs.",
         input_schema={
             "type": "object",
             "properties": {
-                "assignee_id": {"type": "integer", "description": "Filter by assignee ID"},
+                "assignee_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Filter by assignee user IDs (from people.list)",
+                },
             },
         },
     ),
     ToolDefinition(
         name="teamwork.tasks.overdue",
-        description="Get overdue tasks (tasks past their due date)",
+        description="Get overdue tasks (tasks past their due date). Use people.list to get user IDs.",
         input_schema={
             "type": "object",
             "properties": {
-                "assignee_id": {"type": "integer", "description": "Filter by assignee ID"},
+                "assignee_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Filter by assignee user IDs (from people.list)",
+                },
             },
         },
     ),
     ToolDefinition(
         name="teamwork.workflows.list",
-        description="List all workflows (board views) in a project. Use this to get workflow IDs for stages",
+        description="List all workflows (board views) in a project. Returns workflow IDs needed for stage operations. Usually there is one workflow per project.",
         input_schema={
             "type": "object",
             "properties": {
@@ -247,15 +259,19 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.create",
-        description="Create a new task in Teamwork",
+        description="Create a new task in Teamwork. Requires project_id (from projects.list) and tasklist_id (from tasklists.list). Supports multiple assignees.",
         input_schema={
             "type": "object",
             "properties": {
-                "project_id": {"type": "integer", "description": "Project ID"},
-                "tasklist_id": {"type": "integer", "description": "Task list ID"},
+                "project_id": {"type": "integer", "description": "Project ID (from projects.list)"},
+                "tasklist_id": {"type": "integer", "description": "Task list ID (from tasklists.list)"},
                 "content": {"type": "string", "description": "Task title/content"},
                 "description": {"type": "string", "description": "Task description"},
-                "assignee_id": {"type": "integer", "description": "Assignee user ID"},
+                "assignee_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "User IDs to assign (from people.list). Supports multiple assignees.",
+                },
                 "due_date": {"type": "string", "description": "Due date (YYYYMMDD)"},
                 "priority": {
                     "type": "string",
@@ -286,12 +302,12 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.bulk_create",
-        description="Create up to 10 tasks in Teamwork (processed sequentially)",
+        description="Create up to 10 tasks in Teamwork at once. Each item inherits project_id and tasklist_id from top-level defaults if not specified.",
         input_schema={
             "type": "object",
             "properties": {
-                "project_id": {"type": "integer", "description": "Default project ID for items"},
-                "tasklist_id": {"type": "integer", "description": "Default task list ID for items"},
+                "project_id": {"type": "integer", "description": "Default project ID for all items (from projects.list)"},
+                "tasklist_id": {"type": "integer", "description": "Default task list ID for all items (from tasklists.list)"},
                 "tag_colors": {
                     "type": "object",
                     "description": "Optional map of tag name -> hex color (#RRGGBB) for all items",
@@ -302,11 +318,15 @@ TEAMWORK_TOOLS = [
                     "items": {
                         "type": "object",
                         "properties": {
-                            "project_id": {"type": "integer", "description": "Project ID"},
-                            "tasklist_id": {"type": "integer", "description": "Task list ID"},
+                            "project_id": {"type": "integer", "description": "Project ID (overrides default)"},
+                            "tasklist_id": {"type": "integer", "description": "Task list ID (overrides default)"},
                             "content": {"type": "string", "description": "Task title/content"},
                             "description": {"type": "string", "description": "Task description"},
-                            "assignee_id": {"type": "integer", "description": "Assignee user ID"},
+                            "assignee_ids": {
+                                "type": "array",
+                                "items": {"type": "integer"},
+                                "description": "User IDs to assign (supports multiple assignees)",
+                            },
                             "due_date": {"type": "string", "description": "Due date (YYYYMMDD)"},
                             "priority": {
                                 "type": "string",
@@ -341,14 +361,18 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.update",
-        description="Update an existing task in Teamwork",
+        description="Update an existing task in Teamwork. Supports changing title, description, assignees, priority, tags, due date.",
         input_schema={
             "type": "object",
             "properties": {
                 "task_id": {"type": "integer", "description": "Task ID to update"},
                 "content": {"type": "string", "description": "New task title"},
                 "description": {"type": "string", "description": "New description"},
-                "assignee_id": {"type": "integer", "description": "New assignee ID"},
+                "assignee_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "New assignee user IDs (from people.list). Replaces current assignees. Supports multiple.",
+                },
                 "due_date": {"type": "string", "description": "New due date (YYYYMMDD)"},
                 "priority": {
                     "type": "string",
@@ -379,11 +403,11 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.bulk_update",
-        description="Update up to 10 tasks in Teamwork (processed sequentially)",
+        description="Update up to 10 tasks in Teamwork at once. Each item requires task_id.",
         input_schema={
             "type": "object",
             "properties": {
-                "project_id": {"type": "integer", "description": "Default project ID for items"},
+                "project_id": {"type": "integer", "description": "Default project ID for tag resolution"},
                 "tag_colors": {
                     "type": "object",
                     "description": "Optional map of tag name -> hex color (#RRGGBB) for all items",
@@ -397,7 +421,11 @@ TEAMWORK_TOOLS = [
                             "task_id": {"type": "integer", "description": "Task ID to update"},
                             "content": {"type": "string", "description": "New task title"},
                             "description": {"type": "string", "description": "New description"},
-                            "assignee_id": {"type": "integer", "description": "New assignee ID"},
+                            "assignee_ids": {
+                                "type": "array",
+                                "items": {"type": "integer"},
+                                "description": "New assignee user IDs (supports multiple assignees)",
+                            },
                             "due_date": {"type": "string", "description": "New due date (YYYYMMDD)"},
                             "priority": {
                                 "type": "string",
@@ -443,7 +471,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasklists.list",
-        description="List task lists for a project in Teamwork",
+        description="List task lists for a project. Returns tasklist IDs required for creating tasks (tasks.create). Call this before creating tasks to get the correct tasklist_id.",
         input_schema={
             "type": "object",
             "properties": {
@@ -454,7 +482,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tags.list",
-        description="List all available tags in Teamwork",
+        description="List all available tags in Teamwork. Returns tag IDs, names, and colors. Use tag IDs for task assignment, or use tags.ensure to assign by name.",
         input_schema={
             "type": "object",
             "properties": {
@@ -464,7 +492,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tags.ensure",
-        description="Ensure tags exist (create missing) and return IDs",
+        description="Ensure tags exist by name and return their IDs. Automatically creates missing tags if possible. Preferred way to assign tags — pass names instead of looking up IDs manually.",
         input_schema={
             "type": "object",
             "properties": {
@@ -484,7 +512,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.get",
-        description="Get details of a single task by ID",
+        description="Get full details of a single task by ID, including description, assignees, tags, dates, and status.",
         input_schema={
             "type": "object",
             "properties": {
@@ -496,14 +524,18 @@ TEAMWORK_TOOLS = [
     # === SUBTASKS ===
     ToolDefinition(
         name="teamwork.subtasks.create",
-        description="Create a subtask under a parent task",
+        description="Create a subtask under an existing parent task. Use tasks.list or tasks.get to find parent_task_id. Supports multiple assignees.",
         input_schema={
             "type": "object",
             "properties": {
-                "parent_task_id": {"type": "integer", "description": "Parent task ID"},
+                "parent_task_id": {"type": "integer", "description": "Parent task ID (from tasks.list or tasks.get)"},
                 "content": {"type": "string", "description": "Subtask title"},
                 "description": {"type": "string", "description": "Subtask description"},
-                "assignee_id": {"type": "integer", "description": "Assignee user ID"},
+                "assignee_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "User IDs to assign (from people.list). Supports multiple assignees.",
+                },
                 "due_date": {"type": "string", "description": "Due date (YYYYMMDD)"},
                 "estimated_minutes": {"type": "integer", "description": "Estimated time in minutes"},
             },
@@ -512,7 +544,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.subtasks.list",
-        description="List subtasks of a parent task",
+        description="List all subtasks of a parent task. Returns subtask IDs, titles, assignees, and status.",
         input_schema={
             "type": "object",
             "properties": {
@@ -524,7 +556,7 @@ TEAMWORK_TOOLS = [
     # === TIME ENTRIES ===
     ToolDefinition(
         name="teamwork.time.log",
-        description="Log time entry for a task",
+        description="Log a time entry for a task. Specify hours and minutes spent, date, and optional description of work done.",
         input_schema={
             "type": "object",
             "properties": {
@@ -541,7 +573,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.time.list",
-        description="List time entries with optional filters",
+        description="List time entries with optional filters. Filter by task, project, user, or date range.",
         input_schema={
             "type": "object",
             "properties": {
@@ -571,7 +603,7 @@ TEAMWORK_TOOLS = [
     # === COMMENTS ===
     ToolDefinition(
         name="teamwork.comments.add",
-        description="Add a comment to a task",
+        description="Add a comment to a task. Optionally notify specific users by their IDs (from people.list).",
         input_schema={
             "type": "object",
             "properties": {
@@ -678,7 +710,7 @@ TEAMWORK_TOOLS = [
     ),
     ToolDefinition(
         name="teamwork.tasks.set_stage_by_name",
-        description="Move a task to a workflow stage by name (e.g., 'In Progress', 'Done'). Easier to use than set_stage.",
+        description="Move a task to a workflow stage by name (e.g., 'In Progress', 'Done'). Preferred method — no need to look up stage IDs. Use stages.list to see available stage names.",
         input_schema={
             "type": "object",
             "properties": {
@@ -719,6 +751,18 @@ TEAMWORK_TOOLS = [
 ]
 
 
+def _resolve_assignee_ids(args: dict) -> Optional[list[int]]:
+    """Extract assignee_ids from args, with backward compat for assignee_id."""
+    ids = args.get("assignee_ids")
+    if ids:
+        return [int(uid) for uid in ids]
+    # Backward compat: single assignee_id
+    single = args.get("assignee_id")
+    if single:
+        return [int(single)]
+    return None
+
+
 async def execute_tool(
     tool_name: str,
     args: dict,
@@ -749,7 +793,7 @@ async def execute_tool(
         elif tool_name == "teamwork.tasks.list":
             result = await client.list_tasks(
                 project_id=args.get("project_id"),
-                assignee_id=args.get("assignee_id"),
+                assignee_ids=_resolve_assignee_ids(args),
                 status=args.get("status"),
                 due_after=args.get("due_after"),
                 due_before=args.get("due_before"),
@@ -760,13 +804,13 @@ async def execute_tool(
 
         elif tool_name == "teamwork.tasks.due_today":
             result = await client.list_tasks_due_today(
-                assignee_id=args.get("assignee_id"),
+                assignee_ids=_resolve_assignee_ids(args),
             )
             return ToolResult(success=True, data=result)
 
         elif tool_name == "teamwork.tasks.overdue":
             result = await client.list_overdue_tasks(
-                assignee_id=args.get("assignee_id"),
+                assignee_ids=_resolve_assignee_ids(args),
             )
             return ToolResult(success=True, data=result)
 
@@ -791,7 +835,7 @@ async def execute_tool(
                 tasklist_id=args["tasklist_id"],
                 content=args["content"],
                 description=args.get("description"),
-                assignee_id=args.get("assignee_id"),
+                assignee_ids=_resolve_assignee_ids(args),
                 due_date=args.get("due_date"),
                 priority=args.get("priority"),
                 tags=tag_ids,
@@ -833,7 +877,7 @@ async def execute_tool(
                         tasklist_id=tasklist_id,
                         content=item["content"],
                         description=item.get("description"),
-                        assignee_id=item.get("assignee_id"),
+                        assignee_ids=_resolve_assignee_ids(item),
                         due_date=item.get("due_date"),
                         priority=item.get("priority"),
                         tags=tag_ids,
@@ -848,8 +892,12 @@ async def execute_tool(
         elif tool_name == "teamwork.tasks.update":
             update_fields = {
                 k: v for k, v in args.items()
-                if k != "task_id" and v is not None
+                if k not in ("task_id", "assignee_id", "assignee_ids", "tags", "tag_names", "tag_colors") and v is not None
             }
+            # Resolve assignee_ids
+            resolved_assignees = _resolve_assignee_ids(args)
+            if resolved_assignees:
+                update_fields["assignee_ids"] = resolved_assignees
             tag_ids = args.get("tags") or []
             tag_names = args.get("tag_names") or []
             if tag_names:
@@ -882,8 +930,12 @@ async def execute_tool(
 
                     update_fields = {
                         k: v for k, v in item.items()
-                        if k not in ("task_id", "tags", "tag_names", "tag_colors") and v is not None
+                        if k not in ("task_id", "assignee_id", "assignee_ids", "tags", "tag_names", "tag_colors") and v is not None
                     }
+                    # Resolve assignee_ids
+                    resolved_assignees = _resolve_assignee_ids(item)
+                    if resolved_assignees:
+                        update_fields["assignee_ids"] = resolved_assignees
 
                     tag_ids = item.get("tags") or []
                     tag_names = item.get("tag_names") or []
@@ -938,7 +990,7 @@ async def execute_tool(
                 parent_task_id=args["parent_task_id"],
                 content=args["content"],
                 description=args.get("description"),
-                assignee_id=args.get("assignee_id"),
+                assignee_ids=_resolve_assignee_ids(args),
                 due_date=args.get("due_date"),
                 estimated_minutes=args.get("estimated_minutes"),
             )

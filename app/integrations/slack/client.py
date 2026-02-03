@@ -218,6 +218,28 @@ class SlackClient:
             json_data={"canvas_id": canvas_id},
         )
 
+    async def lookup_canvas_sections(
+        self,
+        canvas_id: str,
+        section_types: Optional[list[str]] = None,
+        contains_text: Optional[str] = None,
+    ) -> dict:
+        """Find sections in a canvas by heading type or text content.
+
+        section_types: e.g. ["h1", "h2", "any_header"]
+        contains_text: text to search for within sections
+        """
+        criteria: dict[str, Any] = {}
+        if section_types:
+            criteria["section_types"] = section_types
+        if contains_text:
+            criteria["contains_text"] = contains_text
+        return await self._request(
+            "POST",
+            "canvases.sections.lookup",
+            json_data={"canvas_id": canvas_id, "criteria": criteria},
+        )
+
     async def set_canvas_access(
         self,
         canvas_id: str,
