@@ -285,6 +285,61 @@ TEAMWORK_TOOLS = [
         },
     ),
     ToolDefinition(
+        name="teamwork.tasks.bulk_create",
+        description="Create up to 10 tasks in Teamwork (processed sequentially)",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "project_id": {"type": "integer", "description": "Default project ID for items"},
+                "tasklist_id": {"type": "integer", "description": "Default task list ID for items"},
+                "tag_colors": {
+                    "type": "object",
+                    "description": "Optional map of tag name -> hex color (#RRGGBB) for all items",
+                },
+                "items": {
+                    "type": "array",
+                    "description": "Tasks to create (max 10)",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "project_id": {"type": "integer", "description": "Project ID"},
+                            "tasklist_id": {"type": "integer", "description": "Task list ID"},
+                            "content": {"type": "string", "description": "Task title/content"},
+                            "description": {"type": "string", "description": "Task description"},
+                            "assignee_id": {"type": "integer", "description": "Assignee user ID"},
+                            "due_date": {"type": "string", "description": "Due date (YYYYMMDD)"},
+                            "priority": {
+                                "type": "string",
+                                "description": "Task priority",
+                                "enum": ["none", "low", "medium", "high"],
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {"type": "integer"},
+                                "description": "Array of tag IDs to assign",
+                            },
+                            "tag_names": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Tag names to ensure and assign (uses colors if provided)",
+                            },
+                            "tag_colors": {
+                                "type": "object",
+                                "description": "Optional map of tag name -> hex color (#RRGGBB)",
+                            },
+                            "estimated_minutes": {
+                                "type": "integer",
+                                "description": "Estimated time in minutes",
+                            },
+                        },
+                        "required": ["content"],
+                    },
+                },
+            },
+            "required": ["items"],
+        },
+    ),
+    ToolDefinition(
         name="teamwork.tasks.update",
         description="Update an existing task in Teamwork",
         input_schema={
@@ -320,6 +375,59 @@ TEAMWORK_TOOLS = [
                 },
             },
             "required": ["task_id"],
+        },
+    ),
+    ToolDefinition(
+        name="teamwork.tasks.bulk_update",
+        description="Update up to 10 tasks in Teamwork (processed sequentially)",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "project_id": {"type": "integer", "description": "Default project ID for items"},
+                "tag_colors": {
+                    "type": "object",
+                    "description": "Optional map of tag name -> hex color (#RRGGBB) for all items",
+                },
+                "items": {
+                    "type": "array",
+                    "description": "Tasks to update (max 10)",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "integer", "description": "Task ID to update"},
+                            "content": {"type": "string", "description": "New task title"},
+                            "description": {"type": "string", "description": "New description"},
+                            "assignee_id": {"type": "integer", "description": "New assignee ID"},
+                            "due_date": {"type": "string", "description": "New due date (YYYYMMDD)"},
+                            "priority": {
+                                "type": "string",
+                                "description": "Task priority",
+                                "enum": ["none", "low", "medium", "high"],
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {"type": "integer"},
+                                "description": "Array of tag IDs to assign",
+                            },
+                            "tag_names": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Tag names to ensure and assign (uses colors if provided)",
+                            },
+                            "tag_colors": {
+                                "type": "object",
+                                "description": "Optional map of tag name -> hex color (#RRGGBB)",
+                            },
+                            "estimated_minutes": {
+                                "type": "integer",
+                                "description": "Estimated time in minutes",
+                            },
+                        },
+                        "required": ["task_id"],
+                    },
+                },
+            },
+            "required": ["items"],
         },
     ),
     ToolDefinition(
@@ -691,6 +799,52 @@ async def execute_tool(
             )
             return ToolResult(success=True, data=result)
 
+        elif tool_name == "teamwork.tasks.bulk_create":
+            items = args.get("items") or []
+            if len(items) > 10:
+                return ToolResult(success=False, error="Max 10 items allowed for bulk_create")
+
+            default_project_id = args.get("project_id")
+            default_tasklist_id = args.get("tasklist_id")
+            default_tag_colors = args.get("tag_colors") or {}
+
+            results = []
+            for idx, item in enumerate(items):
+                try:
+                    project_id = item.get("project_id") or default_project_id
+                    tasklist_id = item.get("tasklist_id") or default_tasklist_id
+                    if not project_id or not tasklist_id or not item.get("content"):
+                        raise ValueError("project_id, tasklist_id and content are required")
+
+                    tag_ids = item.get("tags") or []
+                    tag_names = item.get("tag_names") or []
+                    tag_colors = item.get("tag_colors") or default_tag_colors
+                    if tag_names:
+                        resolved = await _ensure_tags(
+                            client,
+                            names=tag_names,
+                            project_id=project_id,
+                            color_map=tag_colors,
+                        )
+                        tag_ids = list({*tag_ids, *resolved})
+
+                    result = await client.create_task(
+                        project_id=project_id,
+                        tasklist_id=tasklist_id,
+                        content=item["content"],
+                        description=item.get("description"),
+                        assignee_id=item.get("assignee_id"),
+                        due_date=item.get("due_date"),
+                        priority=item.get("priority"),
+                        tags=tag_ids,
+                        estimated_minutes=item.get("estimated_minutes"),
+                    )
+                    results.append({"index": idx, "success": True, "data": result})
+                except Exception as exc:
+                    results.append({"index": idx, "success": False, "error": str(exc)})
+
+            return ToolResult(success=True, data={"count": len(results), "results": results})
+
         elif tool_name == "teamwork.tasks.update":
             update_fields = {
                 k: v for k, v in args.items()
@@ -710,6 +864,47 @@ async def execute_tool(
                 update_fields["tags"] = tag_ids
             result = await client.update_task(args["task_id"], **update_fields)
             return ToolResult(success=True, data=result)
+
+        elif tool_name == "teamwork.tasks.bulk_update":
+            items = args.get("items") or []
+            if len(items) > 10:
+                return ToolResult(success=False, error="Max 10 items allowed for bulk_update")
+
+            default_project_id = args.get("project_id")
+            default_tag_colors = args.get("tag_colors") or {}
+
+            results = []
+            for idx, item in enumerate(items):
+                try:
+                    task_id = item.get("task_id")
+                    if not task_id:
+                        raise ValueError("task_id is required")
+
+                    update_fields = {
+                        k: v for k, v in item.items()
+                        if k not in ("task_id", "tags", "tag_names", "tag_colors") and v is not None
+                    }
+
+                    tag_ids = item.get("tags") or []
+                    tag_names = item.get("tag_names") or []
+                    if tag_names:
+                        project_id = item.get("project_id") or default_project_id
+                        resolved = await _ensure_tags(
+                            client,
+                            names=tag_names,
+                            project_id=project_id,
+                            color_map=item.get("tag_colors") or default_tag_colors,
+                        )
+                        tag_ids = list({*tag_ids, *resolved})
+                    if tag_ids:
+                        update_fields["tags"] = tag_ids
+
+                    result = await client.update_task(task_id, **update_fields)
+                    results.append({"index": idx, "success": True, "data": result})
+                except Exception as exc:
+                    results.append({"index": idx, "success": False, "error": str(exc)})
+
+            return ToolResult(success=True, data={"count": len(results), "results": results})
 
         elif tool_name == "teamwork.tasks.complete":
             result = await client.complete_task(args["task_id"])
