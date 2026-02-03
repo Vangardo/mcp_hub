@@ -68,6 +68,7 @@
                     <option value="">All Providers</option>
                     <option value="teamwork" {% if filters.provider == 'teamwork' %}selected{% endif %}>Teamwork</option>
                     <option value="slack" {% if filters.provider == 'slack' %}selected{% endif %}>Slack</option>
+                    <option value="miro" {% if filters.provider == 'miro' %}selected{% endif %}>Miro</option>
                     <option value="telegram" {% if filters.provider == 'telegram' %}selected{% endif %}>Telegram</option>
                 </select>
             </div>
@@ -130,6 +131,10 @@
                             {% elif log.provider == 'slack' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                                 Slack
+                            </span>
+                            {% elif log.provider == 'miro' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Miro
                             </span>
                             {% elif log.provider == 'telegram' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">

@@ -62,6 +62,22 @@
         </div>
 
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Miro OAuth</h2>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
+                <input type="text" name="miro_client_id"
+                       value="{{ settings.miro_client_id or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label>
+                <input type="password" name="miro_client_secret"
+                       value="{{ settings.miro_client_secret or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
             <h2 class="text-lg font-semibold text-slate-900">Telegram (MTProto)</h2>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">API ID</label>

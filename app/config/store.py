@@ -11,6 +11,8 @@ TEAMWORK_CLIENT_ID_KEY = "teamwork_client_id"
 TEAMWORK_CLIENT_SECRET_KEY = "teamwork_client_secret"
 SLACK_CLIENT_ID_KEY = "slack_client_id"
 SLACK_CLIENT_SECRET_KEY = "slack_client_secret"
+MIRO_CLIENT_ID_KEY = "miro_client_id"
+MIRO_CLIENT_SECRET_KEY = "miro_client_secret"
 TELEGRAM_API_ID_KEY = "telegram_api_id"
 TELEGRAM_API_HASH_KEY = "telegram_api_hash"
 
@@ -74,6 +76,11 @@ def get_integration_credentials(provider: str) -> Tuple[Optional[str], Optional[
         return (
             get_setting_value(SLACK_CLIENT_ID_KEY) or settings.slack_client_id,
             get_setting_value(SLACK_CLIENT_SECRET_KEY) or settings.slack_client_secret,
+        )
+    if provider == "miro":
+        return (
+            get_setting_value(MIRO_CLIENT_ID_KEY) or settings.miro_client_id,
+            get_setting_value(MIRO_CLIENT_SECRET_KEY) or settings.miro_client_secret,
         )
     return (None, None)
 

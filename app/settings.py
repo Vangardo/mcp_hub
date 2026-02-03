@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     slack_client_id: Optional[str] = None
     slack_client_secret: Optional[str] = None
 
+    # Miro OAuth
+    miro_client_id: Optional[str] = None
+    miro_client_secret: Optional[str] = None
+
     # Telegram (MTProto)
     telegram_api_id: Optional[str] = None
     telegram_api_hash: Optional[str] = None
