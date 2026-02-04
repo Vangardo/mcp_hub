@@ -3,10 +3,17 @@ Figma layout transformer.
 
 Converts raw Figma JSON tree into a compact, CSS-oriented layout description.
 Strips vector paths, plugin data, export settings, and other noise.
-Keeps: structure, dimensions, auto-layout, colors, fonts, text, border-radius, images.
+Keeps: structure, dimensions, auto-layout, colors, fonts, text, border-radius,
+gradients, image refs, shadows.
+
+Safety: enforces max node count to prevent token explosion.
 """
 
 from typing import Any, Optional
+
+
+# Hard limit: if the tree has more nodes than this, truncate and warn
+MAX_NODES = 500
 
 
 def _rgba_to_css(color: dict, opacity: float = 1.0) -> str:
@@ -19,6 +26,39 @@ def _rgba_to_css(color: dict, opacity: float = 1.0) -> str:
     return f"rgba({r},{g},{b},{a})"
 
 
+def _gradient_to_css(fill: dict) -> str:
+    fill_type = fill.get("type", "GRADIENT_LINEAR")
+    stops = fill.get("gradientStops", [])
+    if not stops:
+        return "gradient"
+
+    stop_strs = []
+    for stop in stops:
+        color = _rgba_to_css(stop.get("color", {}))
+        pos = round(stop.get("position", 0) * 100)
+        stop_strs.append(f"{color} {pos}%")
+
+    stops_css = ", ".join(stop_strs)
+
+    if "LINEAR" in fill_type:
+        # Extract angle from gradient handle positions
+        handles = fill.get("gradientHandlePositions", [])
+        if len(handles) >= 2:
+            import math
+            dx = handles[1].get("x", 0) - handles[0].get("x", 0)
+            dy = handles[1].get("y", 0) - handles[0].get("y", 0)
+            angle = round(math.degrees(math.atan2(dy, dx)) + 90) % 360
+            return f"linear-gradient({angle}deg, {stops_css})"
+        return f"linear-gradient({stops_css})"
+    elif "RADIAL" in fill_type:
+        return f"radial-gradient({stops_css})"
+    elif "ANGULAR" in fill_type:
+        return f"conic-gradient({stops_css})"
+    elif "DIAMOND" in fill_type:
+        return f"diamond-gradient({stops_css})"
+    return f"gradient({stops_css})"
+
+
 def _extract_fill(fills: list) -> Optional[str]:
     if not fills:
         return None
@@ -29,9 +69,13 @@ def _extract_fill(fills: list) -> Optional[str]:
         if fill_type == "SOLID":
             return _rgba_to_css(fill["color"], fill.get("opacity", 1.0))
         if fill_type == "IMAGE":
-            return "image"
+            image_ref = fill.get("imageRef", "")
+            scale_mode = fill.get("scaleMode", "FILL").lower()
+            if image_ref:
+                return f"image({image_ref}, {scale_mode})"
+            return f"image({scale_mode})"
         if "GRADIENT" in fill_type:
-            return f"gradient({fill_type.lower()})"
+            return _gradient_to_css(fill)
     return None
 
 
@@ -73,12 +117,22 @@ def _extract_effects(effects: list) -> list[str]:
             ox = round(eff.get("offset", {}).get("x", 0))
             oy = round(eff.get("offset", {}).get("y", 0))
             blur = round(eff.get("radius", 0))
-            result.append(f"shadow({ox} {oy} {blur} {color})")
+            spread = round(eff.get("spread", 0))
+            if spread:
+                result.append(f"shadow({ox} {oy} {blur} {spread} {color})")
+            else:
+                result.append(f"shadow({ox} {oy} {blur} {color})")
         elif eff_type == "INNER_SHADOW":
-            result.append("inner-shadow")
-        elif eff_type in ("LAYER_BLUR", "BACKGROUND_BLUR"):
+            c = eff.get("color", {})
+            color = _rgba_to_css(c, c.get("a", 0.25))
+            ox = round(eff.get("offset", {}).get("x", 0))
+            oy = round(eff.get("offset", {}).get("y", 0))
             blur = round(eff.get("radius", 0))
-            result.append(f"blur({blur}px)")
+            result.append(f"inner-shadow({ox} {oy} {blur} {color})")
+        elif eff_type == "LAYER_BLUR":
+            result.append(f"blur({round(eff.get('radius', 0))}px)")
+        elif eff_type == "BACKGROUND_BLUR":
+            result.append(f"backdrop-blur({round(eff.get('radius', 0))}px)")
     return result
 
 
@@ -97,12 +151,23 @@ def _extract_text_style(node: dict) -> Optional[dict]:
         align = style["textAlignHorizontal"].lower()
         if align != "left":
             result["align"] = align
+    if style.get("textAlignVertical"):
+        valign = style["textAlignVertical"].lower()
+        if valign != "top":
+            result["valign"] = valign
     if style.get("lineHeightPx") and style.get("fontSize"):
-        lh = round(style["lineHeightPx"] / style["fontSize"], 2)
-        if lh != 1.0:
-            result["lineHeight"] = lh
+        lh_px = round(style["lineHeightPx"], 1)
+        result["lineHeight"] = f"{lh_px}px"
     if style.get("letterSpacing") and style["letterSpacing"] != 0:
         result["letterSpacing"] = f"{round(style['letterSpacing'], 1)}px"
+    if style.get("textDecoration"):
+        dec = style["textDecoration"].lower()
+        if dec != "none":
+            result["decoration"] = dec
+    if style.get("textCase"):
+        case = style["textCase"].lower()
+        if case not in ("original", "none"):
+            result["textTransform"] = case
     return result if result else None
 
 
@@ -137,11 +202,36 @@ def _extract_auto_layout(node: dict) -> Optional[dict]:
     if counter in align_map and counter != "MIN":
         result["alignItems"] = align_map[counter]
 
+    if node.get("layoutWrap") == "WRAP":
+        result["wrap"] = True
+
     return result
 
 
-def _compact_node(node: dict, depth: int = 0, max_depth: int = 50) -> Optional[dict]:
+class _NodeCounter:
+    def __init__(self, max_nodes: int):
+        self.count = 0
+        self.max_nodes = max_nodes
+        self.truncated = False
+
+    def increment(self) -> bool:
+        self.count += 1
+        if self.count > self.max_nodes:
+            self.truncated = True
+            return False
+        return True
+
+
+def _compact_node(
+    node: dict,
+    depth: int = 0,
+    max_depth: int = 50,
+    counter: Optional[_NodeCounter] = None,
+) -> Optional[dict]:
     if depth > max_depth:
+        return None
+
+    if counter and not counter.increment():
         return None
 
     node_type = node.get("type", "UNKNOWN")
@@ -153,6 +243,22 @@ def _compact_node(node: dict, depth: int = 0, max_depth: int = 50) -> Optional[d
     skip_types = {"BOOLEAN_OPERATION", "SLICE", "STAMP"}
     if node_type in skip_types:
         return None
+
+    # Skip pure vectors (icons etc.) — they add noise, better exported as SVG
+    if node_type == "VECTOR":
+        bbox = node.get("absoluteBoundingBox", {})
+        w = bbox.get("width", 0)
+        h = bbox.get("height", 0)
+        fill = _extract_fill(node.get("fills", []))
+        return {
+            "type": "VECTOR",
+            "name": node.get("name", ""),
+            "id": node.get("id", ""),
+            "w": round(w),
+            "h": round(h),
+            "fill": fill,
+            "note": "export as SVG via figma.images.export",
+        }
 
     result: dict[str, Any] = {
         "type": node_type,
@@ -201,6 +307,10 @@ def _compact_node(node: dict, depth: int = 0, max_depth: int = 50) -> Optional[d
     if opacity is not None and opacity < 1.0:
         result["opacity"] = round(opacity, 2)
 
+    # Overflow / clip
+    if node.get("clipsContent"):
+        result["overflow"] = "hidden"
+
     # Text
     if node_type == "TEXT":
         chars = node.get("characters", "")
@@ -219,7 +329,7 @@ def _compact_node(node: dict, depth: int = 0, max_depth: int = 50) -> Optional[d
     constraints_h = node.get("layoutSizingHorizontal")
     constraints_v = node.get("layoutSizingVertical")
     if constraints_h and constraints_h != "FIXED":
-        result["sizingH"] = constraints_h.lower()  # "fill" or "hug"
+        result["sizingH"] = constraints_h.lower()
     if constraints_v and constraints_v != "FIXED":
         result["sizingV"] = constraints_v.lower()
 
@@ -234,7 +344,9 @@ def _compact_node(node: dict, depth: int = 0, max_depth: int = 50) -> Optional[d
     if children:
         compact_children = []
         for child in children:
-            compact = _compact_node(child, depth + 1, max_depth)
+            if counter and counter.truncated:
+                break
+            compact = _compact_node(child, depth + 1, max_depth, counter)
             if compact:
                 compact_children.append(compact)
         if compact_children:
@@ -243,8 +355,13 @@ def _compact_node(node: dict, depth: int = 0, max_depth: int = 50) -> Optional[d
     return result
 
 
-def transform_to_layout(figma_data: dict, max_depth: int = 50) -> dict:
+def transform_to_layout(
+    figma_data: dict,
+    max_depth: int = 50,
+    max_nodes: int = MAX_NODES,
+) -> dict:
     """Transform raw Figma file/nodes response into compact layout tree."""
+    counter = _NodeCounter(max_nodes)
     result: dict[str, Any] = {}
 
     # File-level info
@@ -273,7 +390,9 @@ def transform_to_layout(figma_data: dict, max_depth: int = 50) -> dict:
         children = document.get("children", [])
         pages = []
         for page in children:
-            compact = _compact_node(page, max_depth=max_depth)
+            if counter.truncated:
+                break
+            compact = _compact_node(page, max_depth=max_depth, counter=counter)
             if compact:
                 pages.append(compact)
         result["pages"] = pages
@@ -283,11 +402,26 @@ def transform_to_layout(figma_data: dict, max_depth: int = 50) -> dict:
     if nodes:
         result["nodes"] = {}
         for node_id, node_data in nodes.items():
+            if counter.truncated:
+                break
             doc = node_data.get("document")
             if doc:
-                compact = _compact_node(doc, max_depth=max_depth)
+                compact = _compact_node(doc, max_depth=max_depth, counter=counter)
                 if compact:
                     result["nodes"][node_id] = compact
+
+    # Stats and warnings
+    result["_stats"] = {
+        "nodes_processed": counter.count,
+        "truncated": counter.truncated,
+        "max_nodes": max_nodes,
+    }
+    if counter.truncated:
+        result["_warning"] = (
+            f"Output truncated at {max_nodes} nodes. "
+            f"Use node_id parameter to target specific sections, "
+            f"or use depth parameter to limit tree depth."
+        )
 
     return result
 
@@ -295,7 +429,6 @@ def transform_to_layout(figma_data: dict, max_depth: int = 50) -> dict:
 def layout_to_text(layout: dict, indent: int = 0) -> str:
     """Convert compact layout dict to a human-readable text representation."""
     lines = []
-    prefix = "  " * indent
 
     if indent == 0:
         if layout.get("name"):
@@ -310,6 +443,14 @@ def layout_to_text(layout: dict, indent: int = 0) -> str:
         for node_id, node in layout.get("nodes", {}).items():
             lines.append(_node_to_text(node, 0))
 
+        # Stats
+        stats = layout.get("_stats", {})
+        if stats:
+            lines.append("")
+            lines.append(f"--- {stats.get('nodes_processed', 0)} nodes processed ---")
+        if layout.get("_warning"):
+            lines.append(f"WARNING: {layout['_warning']}")
+
         return "\n".join(lines)
 
     return _node_to_text(layout, indent)
@@ -322,7 +463,8 @@ def _node_to_text(node: dict, indent: int = 0) -> str:
     # Build node descriptor
     node_type = node.get("type", "")
     name = node.get("name", "")
-    parts = [f'{node_type} "{name}"']
+    node_id = node.get("id", "")
+    parts = [f'{node_type} "{name}" [{node_id}]']
 
     # Dimensions
     w, h = node.get("w"), node.get("h")
@@ -341,6 +483,8 @@ def _node_to_text(node: dict, indent: int = 0) -> str:
             layout_parts.append(f"justify:{layout['justify']}")
         if "alignItems" in layout:
             layout_parts.append(f"align:{layout['alignItems']}")
+        if layout.get("wrap"):
+            layout_parts.append("wrap")
         parts.append(", ".join(layout_parts))
 
     # Fill
@@ -363,11 +507,19 @@ def _node_to_text(node: dict, indent: int = 0) -> str:
     if node.get("effects"):
         parts.extend(node["effects"])
 
+    # Overflow
+    if node.get("overflow"):
+        parts.append(f"overflow:{node['overflow']}")
+
     # Sizing
     if node.get("sizingH"):
         parts.append(f"w:{node['sizingH']}")
     if node.get("sizingV"):
         parts.append(f"h:{node['sizingV']}")
+
+    # Vector note
+    if node.get("note"):
+        parts.append(node["note"])
 
     line = f"{prefix}{' | '.join(parts)}"
 
@@ -388,6 +540,14 @@ def _node_to_text(node: dict, indent: int = 0) -> str:
             ts_parts.append(node["color"])
         if ts.get("align"):
             ts_parts.append(ts["align"])
+        if ts.get("lineHeight"):
+            ts_parts.append(f"lh:{ts['lineHeight']}")
+        if ts.get("letterSpacing"):
+            ts_parts.append(f"ls:{ts['letterSpacing']}")
+        if ts.get("decoration"):
+            ts_parts.append(ts["decoration"])
+        if ts.get("textTransform"):
+            ts_parts.append(ts["textTransform"])
 
         font_info = " ".join(ts_parts)
         if font_info:
