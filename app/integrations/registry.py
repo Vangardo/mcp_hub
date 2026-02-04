@@ -33,9 +33,11 @@ def register_integrations():
     from app.integrations.teamwork import TeamworkIntegration
     from app.integrations.slack import SlackIntegration
     from app.integrations.miro import MiroIntegration
+    from app.integrations.figma import FigmaIntegration
     from app.integrations.telegram import TelegramIntegration
 
     integration_registry.register(TeamworkIntegration())
     integration_registry.register(SlackIntegration())
     integration_registry.register(MiroIntegration())
+    integration_registry.register(FigmaIntegration())
     integration_registry.register(TelegramIntegration())

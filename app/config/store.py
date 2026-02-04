@@ -13,6 +13,8 @@ SLACK_CLIENT_ID_KEY = "slack_client_id"
 SLACK_CLIENT_SECRET_KEY = "slack_client_secret"
 MIRO_CLIENT_ID_KEY = "miro_client_id"
 MIRO_CLIENT_SECRET_KEY = "miro_client_secret"
+FIGMA_CLIENT_ID_KEY = "figma_client_id"
+FIGMA_CLIENT_SECRET_KEY = "figma_client_secret"
 TELEGRAM_API_ID_KEY = "telegram_api_id"
 TELEGRAM_API_HASH_KEY = "telegram_api_hash"
 
@@ -81,6 +83,11 @@ def get_integration_credentials(provider: str) -> Tuple[Optional[str], Optional[
         return (
             get_setting_value(MIRO_CLIENT_ID_KEY) or settings.miro_client_id,
             get_setting_value(MIRO_CLIENT_SECRET_KEY) or settings.miro_client_secret,
+        )
+    if provider == "figma":
+        return (
+            get_setting_value(FIGMA_CLIENT_ID_KEY) or settings.figma_client_id,
+            get_setting_value(FIGMA_CLIENT_SECRET_KEY) or settings.figma_client_secret,
         )
     return (None, None)
 

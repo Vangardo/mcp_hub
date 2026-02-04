@@ -12,7 +12,7 @@
     <form id="admin-settings-form" class="space-y-6">
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
             <h2 class="text-lg font-semibold text-slate-900">Public URL</h2>
-            <p class="text-sm text-slate-500">Used to build the MCP endpoint URL shown in GPT configuration.</p>
+            <p class="text-sm text-slate-500">Used to build the MCP endpoint URL and OAuth redirect URIs. Set this first — redirect URIs below depend on it.</p>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Public Base URL</label>
                 <input type="text" name="public_base_url" placeholder="https://mcp.example.com"
@@ -29,8 +29,25 @@
             </div>
         </div>
 
+        <!-- Teamwork -->
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-slate-900">Teamwork OAuth</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-900">Teamwork OAuth</h2>
+                <a href="https://developer.teamwork.com/" target="_blank" rel="noopener"
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    Create App
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 space-y-1">
+                <p class="text-xs text-slate-600">1. Go to <a href="https://developer.teamwork.com/" target="_blank" rel="noopener" class="text-primary-600 hover:underline">developer.teamwork.com</a> and create an OAuth app</p>
+                <p class="text-xs text-slate-600">2. Set the <span class="font-medium">Redirect URI</span> to:</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/teamwork/callback</code>
+                    <button type="button" onclick="copyRedirectUri('teamwork')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                </div>
+                <p class="text-xs text-slate-600">3. Copy the Client ID and Client Secret below</p>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
                 <input type="text" name="teamwork_client_id"
@@ -45,8 +62,48 @@
             </div>
         </div>
 
+        <!-- Slack -->
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-slate-900">Slack OAuth</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-900">Slack OAuth</h2>
+                <a href="https://api.slack.com/apps" target="_blank" rel="noopener"
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    Create App
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 space-y-1">
+                <p class="text-xs text-slate-600">1. Go to <a href="https://api.slack.com/apps" target="_blank" rel="noopener" class="text-primary-600 hover:underline">api.slack.com/apps</a> and create a new app</p>
+                <p class="text-xs text-slate-600">2. Under <span class="font-medium">OAuth & Permissions</span>, add the <span class="font-medium">Redirect URL</span>:</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/slack/callback</code>
+                    <button type="button" onclick="copyRedirectUri('slack')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                </div>
+                <p class="text-xs text-slate-600">3. Add the required <span class="font-medium">User Token Scopes</span> listed below</p>
+                <p class="text-xs text-slate-600">4. Copy Client ID and Client Secret from <span class="font-medium">Basic Information</span></p>
+                <details class="mt-2">
+                    <summary class="text-xs font-medium text-slate-700 cursor-pointer hover:text-slate-900">Required User Token Scopes (16)</summary>
+                    <div class="mt-2 grid grid-cols-1 gap-1">
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">channels:read</code><span class="text-xs text-slate-500">List public channels and their info</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">channels:history</code><span class="text-xs text-slate-500">Read message history in public channels</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">groups:read</code><span class="text-xs text-slate-500">List private channels the user is in</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">groups:history</code><span class="text-xs text-slate-500">Read message history in private channels</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">chat:write</code><span class="text-xs text-slate-500">Send messages on behalf of the user</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">im:read</code><span class="text-xs text-slate-500">List direct message conversations</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">im:write</code><span class="text-xs text-slate-500">Start new direct message conversations</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">im:history</code><span class="text-xs text-slate-500">Read message history in DMs</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">mpim:read</code><span class="text-xs text-slate-500">List group DM conversations</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">mpim:write</code><span class="text-xs text-slate-500">Start new group DM conversations</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">mpim:history</code><span class="text-xs text-slate-500">Read message history in group DMs</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">users:read</code><span class="text-xs text-slate-500">View user profiles and presence</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">users:read.email</code><span class="text-xs text-slate-500">View user email addresses</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">search:read.public</code><span class="text-xs text-slate-500">Search messages in public channels</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">search:read.files</code><span class="text-xs text-slate-500">Search shared files</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">canvases:read</code><span class="text-xs text-slate-500">Read Slack canvases</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">canvases:write</code><span class="text-xs text-slate-500">Create and edit Slack canvases</span></div>
+                    </div>
+                </details>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
                 <input type="text" name="slack_client_id"
@@ -61,8 +118,35 @@
             </div>
         </div>
 
+        <!-- Miro -->
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-slate-900">Miro OAuth</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-900">Miro OAuth</h2>
+                <a href="https://miro.com/app/settings/user-profile/apps" target="_blank" rel="noopener"
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    Create App
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 space-y-1">
+                <p class="text-xs text-slate-600">1. Go to <a href="https://miro.com/app/settings/user-profile/apps" target="_blank" rel="noopener" class="text-primary-600 hover:underline">Miro Developer Settings</a> and create a new app</p>
+                <p class="text-xs text-slate-600">2. In the app settings, add the <span class="font-medium">Redirect URI</span>:</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/miro/callback</code>
+                    <button type="button" onclick="copyRedirectUri('miro')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                </div>
+                <p class="text-xs text-slate-600">3. Enable the required scopes listed below</p>
+                <p class="text-xs text-slate-600">4. Copy Client ID and Client Secret</p>
+                <details class="mt-2">
+                    <summary class="text-xs font-medium text-slate-700 cursor-pointer hover:text-slate-900">Required Scopes (4)</summary>
+                    <div class="mt-2 grid grid-cols-1 gap-1">
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">boards:read</code><span class="text-xs text-slate-500">View boards, items, and their content</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">boards:write</code><span class="text-xs text-slate-500">Create and edit boards, sticky notes, shapes, cards, connectors</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">identity:read</code><span class="text-xs text-slate-500">Identify the connected user (name, ID)</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">team:read</code><span class="text-xs text-slate-500">View team info and membership</span></div>
+                    </div>
+                </details>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
                 <input type="text" name="miro_client_id"
@@ -77,8 +161,66 @@
             </div>
         </div>
 
+        <!-- Figma -->
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-slate-900">Telegram (MTProto)</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-900">Figma OAuth</h2>
+                <a href="https://www.figma.com/developers/apps" target="_blank" rel="noopener"
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    Create App
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 space-y-1">
+                <p class="text-xs text-slate-600">1. Go to <a href="https://www.figma.com/developers/apps" target="_blank" rel="noopener" class="text-primary-600 hover:underline">Figma Developer Apps</a> and create a new app</p>
+                <p class="text-xs text-slate-600">2. Add the <span class="font-medium">Callback URL</span>:</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/figma/callback</code>
+                    <button type="button" onclick="copyRedirectUri('figma')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                </div>
+                <p class="text-xs text-slate-600">3. Enable the required scopes listed below</p>
+                <p class="text-xs text-slate-600">4. Copy Client ID and Client Secret</p>
+                <details class="mt-2">
+                    <summary class="text-xs font-medium text-slate-700 cursor-pointer hover:text-slate-900">Required Scopes (5)</summary>
+                    <div class="mt-2 grid grid-cols-1 gap-1">
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">file_content:read</code><span class="text-xs text-slate-500">Read layers, nodes, and design content of files</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">file_metadata:read</code><span class="text-xs text-slate-500">Read file name, versions, thumbnail, and project info</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">file_comments:write</code><span class="text-xs text-slate-500">Post and delete comments on files</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">file_dev_resources:read</code><span class="text-xs text-slate-500">Read dev resources and component links</span></div>
+                        <div class="flex items-baseline gap-2"><code class="text-xs text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded whitespace-nowrap">current_user:read</code><span class="text-xs text-slate-500">Identify the connected user (name, email, avatar)</span></div>
+                    </div>
+                </details>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label>
+                <input type="text" name="figma_client_id"
+                       value="{{ settings.figma_client_id or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label>
+                <input type="password" name="figma_client_secret"
+                       value="{{ settings.figma_client_secret or '' }}"
+                       class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+
+        <!-- Telegram -->
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-900">Telegram (MTProto)</h2>
+                <a href="https://my.telegram.org/apps" target="_blank" rel="noopener"
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    Create App
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 space-y-1">
+                <p class="text-xs text-slate-600">1. Go to <a href="https://my.telegram.org/apps" target="_blank" rel="noopener" class="text-primary-600 hover:underline">my.telegram.org/apps</a> and sign in</p>
+                <p class="text-xs text-slate-600">2. Create a new application (or use an existing one)</p>
+                <p class="text-xs text-slate-600">3. Copy the <span class="font-medium">API ID</span> (numeric) and <span class="font-medium">API Hash</span></p>
+                <p class="text-xs text-slate-500 mt-1 italic">No redirect URI needed — Telegram uses session-based authentication</p>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">API ID</label>
                 <input type="text" name="telegram_api_id"
@@ -106,6 +248,17 @@
 
 {% block scripts %}
 <script>
+    const baseUrl = {{ base_url | tojson }};
+
+    function copyRedirectUri(provider) {
+        const uri = baseUrl + '/oauth/' + provider + '/callback';
+        navigator.clipboard.writeText(uri).then(() => {
+            showToast('Redirect URI copied!', 'success');
+        }).catch(() => {
+            showToast('Failed to copy', 'error');
+        });
+    }
+
     document.getElementById('admin-settings-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);

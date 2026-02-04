@@ -44,6 +44,12 @@
                                 <path d="M17.392 0H6.608C2.958 0 0 2.958 0 6.608v10.784C0 21.042 2.958 24 6.608 24h10.784C21.042 24 24 21.042 24 17.392V6.608C24 2.958 21.042 0 17.392 0zM20.1 17.9L18.1 7.6l-4 7-4-7-4 7-2-1.3 5.2-9.6h1.6l3.2 5.8 3.2-5.8h1.6l2.2 13.2z"/>
                             </svg>
                         </div>
+                        {% elif integration.name == 'figma' %}
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z"/>
+                            </svg>
+                        </div>
                         {% elif integration.name == 'telegram' %}
                         <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
                             <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -83,6 +89,8 @@
                         Workspace: <span class="font-medium text-slate-700">{{ integration.meta.team_name }}</span>
                         {% elif integration.meta.company_name %}
                         Company: <span class="font-medium text-slate-700">{{ integration.meta.company_name }}</span>
+                        {% elif integration.meta.handle %}
+                        User: <span class="font-medium text-slate-700">{{ integration.meta.handle }}</span>
                         {% endif %}
                     </p>
                     {% endif %}

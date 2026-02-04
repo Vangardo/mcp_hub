@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     miro_client_id: Optional[str] = None
     miro_client_secret: Optional[str] = None
 
+    # Figma OAuth
+    figma_client_id: Optional[str] = None
+    figma_client_secret: Optional[str] = None
+
     # Telegram (MTProto)
     telegram_api_id: Optional[str] = None
     telegram_api_hash: Optional[str] = None

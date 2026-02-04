@@ -20,6 +20,8 @@ from app.config.store import (
     SLACK_CLIENT_SECRET_KEY,
     MIRO_CLIENT_ID_KEY,
     MIRO_CLIENT_SECRET_KEY,
+    FIGMA_CLIENT_ID_KEY,
+    FIGMA_CLIENT_SECRET_KEY,
     TELEGRAM_API_ID_KEY,
     TELEGRAM_API_HASH_KEY,
     get_setting,
@@ -114,6 +116,8 @@ class AdminSettingsResponse(BaseModel):
     slack_client_secret: Optional[str] = None
     miro_client_id: Optional[str] = None
     miro_client_secret: Optional[str] = None
+    figma_client_id: Optional[str] = None
+    figma_client_secret: Optional[str] = None
     telegram_api_id: Optional[str] = None
     telegram_api_hash: Optional[str] = None
 
@@ -127,6 +131,8 @@ class AdminSettingsUpdate(BaseModel):
     slack_client_secret: Optional[str] = None
     miro_client_id: Optional[str] = None
     miro_client_secret: Optional[str] = None
+    figma_client_id: Optional[str] = None
+    figma_client_secret: Optional[str] = None
     telegram_api_id: Optional[str] = None
     telegram_api_hash: Optional[str] = None
     model_config = {
@@ -140,6 +146,8 @@ class AdminSettingsUpdate(BaseModel):
                     "slack_client_secret": "slack_secret",
                     "miro_client_id": "miro_client_id",
                     "miro_client_secret": "miro_secret",
+                    "figma_client_id": "figma_client_id",
+                    "figma_client_secret": "figma_secret",
                     "telegram_api_id": "123456",
                     "telegram_api_hash": "hash",
                 }
@@ -575,6 +583,8 @@ async def list_audit_logs(
                                 "slack_client_secret": "slack_secret",
                                 "miro_client_id": "miro_id",
                                 "miro_client_secret": "miro_secret",
+                                "figma_client_id": "figma_id",
+                                "figma_client_secret": "figma_secret",
                                 "telegram_api_id": "123456",
                                 "telegram_api_hash": "hash",
                             },
@@ -596,6 +606,8 @@ async def get_admin_settings(admin: User = Depends(require_admin)):
             slack_client_secret=get_setting(conn, SLACK_CLIENT_SECRET_KEY),
             miro_client_id=get_setting(conn, MIRO_CLIENT_ID_KEY),
             miro_client_secret=get_setting(conn, MIRO_CLIENT_SECRET_KEY),
+            figma_client_id=get_setting(conn, FIGMA_CLIENT_ID_KEY),
+            figma_client_secret=get_setting(conn, FIGMA_CLIENT_SECRET_KEY),
             telegram_api_id=get_setting(conn, TELEGRAM_API_ID_KEY),
             telegram_api_hash=get_setting(conn, TELEGRAM_API_HASH_KEY),
         )
@@ -620,6 +632,8 @@ async def get_admin_settings(admin: User = Depends(require_admin)):
                                 "slack_client_secret": "slack_secret",
                                 "miro_client_id": "miro_id",
                                 "miro_client_secret": "miro_secret",
+                                "figma_client_id": "figma_id",
+                                "figma_client_secret": "figma_secret",
                                 "telegram_api_id": "123456",
                                 "telegram_api_hash": "hash",
                             },
@@ -643,6 +657,8 @@ async def update_admin_settings(
         set_setting(conn, SLACK_CLIENT_SECRET_KEY, data.slack_client_secret)
         set_setting(conn, MIRO_CLIENT_ID_KEY, data.miro_client_id)
         set_setting(conn, MIRO_CLIENT_SECRET_KEY, data.miro_client_secret)
+        set_setting(conn, FIGMA_CLIENT_ID_KEY, data.figma_client_id)
+        set_setting(conn, FIGMA_CLIENT_SECRET_KEY, data.figma_client_secret)
         set_setting(conn, TELEGRAM_API_ID_KEY, data.telegram_api_id)
         set_setting(conn, TELEGRAM_API_HASH_KEY, data.telegram_api_hash)
 
@@ -655,6 +671,8 @@ async def update_admin_settings(
             slack_client_secret=get_setting(conn, SLACK_CLIENT_SECRET_KEY),
             miro_client_id=get_setting(conn, MIRO_CLIENT_ID_KEY),
             miro_client_secret=get_setting(conn, MIRO_CLIENT_SECRET_KEY),
+            figma_client_id=get_setting(conn, FIGMA_CLIENT_ID_KEY),
+            figma_client_secret=get_setting(conn, FIGMA_CLIENT_SECRET_KEY),
             telegram_api_id=get_setting(conn, TELEGRAM_API_ID_KEY),
             telegram_api_hash=get_setting(conn, TELEGRAM_API_HASH_KEY),
         )

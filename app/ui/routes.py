@@ -22,6 +22,8 @@ from app.config.store import (
     SLACK_CLIENT_SECRET_KEY,
     MIRO_CLIENT_ID_KEY,
     MIRO_CLIENT_SECRET_KEY,
+    FIGMA_CLIENT_ID_KEY,
+    FIGMA_CLIENT_SECRET_KEY,
     TELEGRAM_API_ID_KEY,
     TELEGRAM_API_HASH_KEY,
     get_setting_value,
@@ -355,9 +357,14 @@ async def admin_settings_page(
         "slack_client_secret": get_setting_value(SLACK_CLIENT_SECRET_KEY),
         "miro_client_id": get_setting_value(MIRO_CLIENT_ID_KEY),
         "miro_client_secret": get_setting_value(MIRO_CLIENT_SECRET_KEY),
+        "figma_client_id": get_setting_value(FIGMA_CLIENT_ID_KEY),
+        "figma_client_secret": get_setting_value(FIGMA_CLIENT_SECRET_KEY),
         "telegram_api_id": get_setting_value(TELEGRAM_API_ID_KEY),
         "telegram_api_hash": get_setting_value(TELEGRAM_API_HASH_KEY),
     }
+
+    from app.config.store import get_public_base_url
+    base_url = get_public_base_url()
 
     return templates.TemplateResponse(
         request,
@@ -366,6 +373,7 @@ async def admin_settings_page(
             "user": {"email": admin.email, "role": admin.role.value},
             "active_page": "settings",
             "settings": settings_data,
+            "base_url": base_url,
         },
     )
 
