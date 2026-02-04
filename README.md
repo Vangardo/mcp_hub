@@ -5,7 +5,7 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
 
-**MCP Hub** is a self-hosted, multi-user gateway that connects your favorite tools — **Teamwork**, **Slack**, **Telegram** — to AI assistants like **ChatGPT**, **Claude Desktop**, and **Cursor** via the Model Context Protocol (MCP).
+**MCP Hub** is a self-hosted, multi-user gateway that connects your favorite tools — **Teamwork**, **Slack**, **Telegram**, **Miro**, **Figma** — to AI assistants like **ChatGPT**, **Claude Desktop**, and **Cursor** via the Model Context Protocol (MCP).
 
 One server. Multiple integrations. Full control over your data.
 
@@ -30,6 +30,8 @@ One server. Multiple integrations. Full control over your data.
 - **Teamwork**: Projects, tasks, task lists, subtasks, time tracking, tags, comments, workflows
 - **Slack**: Channels, messages, DMs, users, search, canvases
 - **Telegram**: Dialogs, messages, search, history (via MTProto/Telethon)
+- **Miro**: Boards, items, sticky notes, text, shapes, cards, connectors
+- **Figma**: Dev layout extraction, images, comments, components, styles
 - More integrations coming soon!
 
 ### Native MCP Protocol
@@ -137,6 +139,14 @@ TEAMWORK_CLIENT_SECRET=your-client-secret
 SLACK_CLIENT_ID=your-client-id
 SLACK_CLIENT_SECRET=your-client-secret
 
+# Miro OAuth (get from https://miro.com/app/settings/user-profile/apps)
+MIRO_CLIENT_ID=your-client-id
+MIRO_CLIENT_SECRET=your-client-secret
+
+# Figma OAuth (get from https://www.figma.com/developers/apps)
+FIGMA_CLIENT_ID=your-client-id
+FIGMA_CLIENT_SECRET=your-client-secret
+
 # Telegram MTProto (get from https://my.telegram.org/)
 TELEGRAM_API_ID=your-api-id
 TELEGRAM_API_HASH=your-api-hash
@@ -157,7 +167,7 @@ Navigate to **Admin → Settings** to configure:
 
 1. **Sign Up** — Request access at `/signup`
 2. **Wait for Approval** — Admin approves your request
-3. **Connect Integrations** — On the Integrations page, connect Teamwork/Slack/Telegram
+3. **Connect Integrations** — On the Integrations page, connect Teamwork/Slack/Telegram/Miro/Figma
 4. **Get Config** — Click "Get GPT Config" to get your MCP configuration
 5. **Use with AI** — Paste config into ChatGPT, Claude, or Cursor
 
@@ -215,56 +225,119 @@ Same as Claude Desktop — use Bearer token authentication with the MCP endpoint
 | Tool | Description |
 |------|-------------|
 | `hub.integrations.list` | List all connected integrations and available tools |
+| `hub.tools.list` | List tools for a specific provider |
+| `hub.tools.call` | Call a provider tool via the hub |
 
 ### Teamwork Tools
 | Tool | Description |
 |------|-------------|
 | `teamwork.projects.list` | List all projects |
+| `teamwork.people.list` | List team members |
+| `teamwork.people.me` | Get current user |
 | `teamwork.tasks.list` | List tasks with filters |
-| `teamwork.tasks.create` | Create a new task |
-| `teamwork.tasks.update` | Update task details |
-| `teamwork.tasks.complete` | Mark task as complete |
 | `teamwork.tasks.due_today` | Get tasks due today |
 | `teamwork.tasks.overdue` | Get overdue tasks |
+| `teamwork.tasks.bulk_create` | Create up to 10 tasks |
+| `teamwork.tasks.bulk_update` | Update up to 10 tasks |
+| `teamwork.tasks.complete` | Mark task as complete |
+| `teamwork.tasks.get` | Get a task by ID |
 | `teamwork.tasklists.list` | List task lists in a project |
 | `teamwork.subtasks.create` | Create a subtask |
 | `teamwork.subtasks.list` | List subtasks |
-| `teamwork.people.list` | List team members |
 | `teamwork.time.log` | Log time entry |
 | `teamwork.time.list` | List time entries |
 | `teamwork.time.totals` | Get time totals |
 | `teamwork.tags.list` | List tags |
 | `teamwork.tags.ensure` | Ensure tags exist |
+| `teamwork.tags.create` | Create tag |
+| `teamwork.tags.update` | Update tag |
+| `teamwork.tags.delete` | Delete tag |
 | `teamwork.comments.add` | Add comment to task |
 | `teamwork.comments.list` | List task comments |
 | `teamwork.workflows.list` | List workflow stages |
 | `teamwork.stages.list` | List board columns |
+| `teamwork.columns.list` | List board columns (alias) |
 | `teamwork.tasks.set_stage` | Move task to stage |
+| `teamwork.tasks.set_stage_by_name` | Move task by stage name |
+| `teamwork.tasks.move_to_column` | Move task to column |
+| `teamwork.tasks.move_to_column_by_name` | Move task by column name |
 
 ### Slack Tools
 | Tool | Description |
 |------|-------------|
 | `slack.channels.list` | List all channels |
 | `slack.users.list` | List workspace users |
+| `slack.users.me` | Get current user |
 | `slack.users.info` | Get user details |
 | `slack.users.find_by_email` | Find user by email |
 | `slack.messages.post` | Post message to channel |
-| `slack.messages.search` | Search messages |
 | `slack.messages.history` | Get channel history |
 | `slack.dm.list` | List direct messages |
+| `slack.dm.group_list` | List group DMs |
 | `slack.dm.send` | Send direct message |
 | `slack.dm.history` | Get DM history |
+| `slack.dm.open` | Open DM |
+| `slack.dm.open_group` | Open group DM |
 | `slack.canvas.create` | Create a canvas |
 | `slack.canvas.edit` | Edit canvas content |
+| `slack.canvas.delete` | Delete canvas |
 | `slack.canvas.share` | Share canvas |
+| `slack.canvas.sections_lookup` | Lookup canvas sections |
+| `slack.canvas.access_list` | List canvas access |
 
 ### Telegram Tools
 | Tool | Description |
 |------|-------------|
+| `telegram.users.me` | Get current user |
 | `telegram.dialogs.list` | List all chats |
 | `telegram.messages.send` | Send message |
 | `telegram.messages.search` | Search messages |
 | `telegram.messages.history` | Get chat history |
+
+### Miro Tools
+| Tool | Description |
+|------|-------------|
+| `miro.boards.list` | List boards |
+| `miro.boards.get` | Get board details |
+| `miro.boards.create` | Create board |
+| `miro.boards.update` | Update board |
+| `miro.boards.delete` | Delete board |
+| `miro.boards.copy` | Copy board |
+| `miro.boards.members` | List board members |
+| `miro.boards.share` | Share board |
+| `miro.users.me` | Get current user |
+| `miro.items.list` | List board items |
+| `miro.items.get` | Get item details |
+| `miro.items.delete` | Delete item |
+| `miro.sticky_notes.bulk_create` | Create sticky notes |
+| `miro.text.bulk_create` | Create text items |
+| `miro.shapes.bulk_create` | Create shapes |
+| `miro.cards.bulk_create` | Create cards |
+| `miro.connectors.bulk_create` | Create connectors |
+
+### Figma Tools
+| Tool | Description |
+|------|-------------|
+| `figma.dev.get_page` | Extract CSS-ready layout |
+| `figma.files.get_layout` | Get compact layout tree |
+| `figma.users.me` | Get current user |
+| `figma.files.get_meta` | Get file metadata |
+| `figma.files.get` | Raw file JSON (use with care) |
+| `figma.files.get_nodes` | Raw node JSON |
+| `figma.images.export` | Export nodes as images |
+| `figma.images.get_fills` | Get image fill URLs |
+| `figma.files.versions` | List file versions |
+| `figma.comments.list` | List comments |
+| `figma.comments.create` | Create comment |
+| `figma.comments.delete` | Delete comment |
+| `figma.projects.list` | List team projects |
+| `figma.projects.files` | List files in a project |
+| `figma.components.list_team` | List team components |
+| `figma.components.list_file` | List file components |
+| `figma.components.get` | Get component |
+| `figma.styles.list_team` | List team styles |
+| `figma.styles.list_file` | List file styles |
+| `figma.styles.get` | Get style |
 
 ---
 
@@ -318,7 +391,7 @@ MCP Hub uses SQLite for simplicity and portability. The database is automaticall
 - `personal_access_tokens` — Long-lived PAT tokens
 - `api_clients` — Client credentials for OAuth
 - `audit_logs` — Tool call audit trail
-- `settings` — Admin configuration (public URL, credentials)
+- `app_settings` — Admin configuration (public URL, credentials)
 - `oauth_states` — Temporary OAuth state tokens
 
 ---
