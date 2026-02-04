@@ -20,6 +20,8 @@ from app.config.store import (
     TEAMWORK_CLIENT_SECRET_KEY,
     SLACK_CLIENT_ID_KEY,
     SLACK_CLIENT_SECRET_KEY,
+    MIRO_CLIENT_ID_KEY,
+    MIRO_CLIENT_SECRET_KEY,
     TELEGRAM_API_ID_KEY,
     TELEGRAM_API_HASH_KEY,
     get_setting_value,
@@ -351,6 +353,8 @@ async def admin_settings_page(
         "teamwork_client_secret": get_setting_value(TEAMWORK_CLIENT_SECRET_KEY),
         "slack_client_id": get_setting_value(SLACK_CLIENT_ID_KEY),
         "slack_client_secret": get_setting_value(SLACK_CLIENT_SECRET_KEY),
+        "miro_client_id": get_setting_value(MIRO_CLIENT_ID_KEY),
+        "miro_client_secret": get_setting_value(MIRO_CLIENT_SECRET_KEY),
         "telegram_api_id": get_setting_value(TELEGRAM_API_ID_KEY),
         "telegram_api_hash": get_setting_value(TELEGRAM_API_HASH_KEY),
     }
