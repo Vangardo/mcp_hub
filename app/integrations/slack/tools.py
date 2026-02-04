@@ -32,6 +32,11 @@ SLACK_TOOLS = [
         },
     ),
     ToolDefinition(
+        name="slack.users.me",
+        description="Get the current authenticated Slack user (id, profile). Useful for 'send me a DM' or 'my messages'.",
+        input_schema={"type": "object", "properties": {}},
+    ),
+    ToolDefinition(
         name="slack.messages.post",
         description="Post a message to a Slack channel",
         input_schema={
@@ -42,19 +47,6 @@ SLACK_TOOLS = [
                 "thread_ts": {"type": "string", "description": "Thread timestamp for replies"},
             },
             "required": ["channel", "text"],
-        },
-    ),
-    ToolDefinition(
-        name="slack.messages.search",
-        description="Search for messages in Slack",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "Search query"},
-                "count": {"type": "integer", "description": "Number of results", "default": 20},
-                "page": {"type": "integer", "description": "Page number", "default": 1},
-            },
-            "required": ["query"],
         },
     ),
     ToolDefinition(
@@ -295,19 +287,36 @@ async def execute_tool(
             )
             return ToolResult(success=True, data=result)
 
+        elif tool_name == "slack.users.me":
+            if meta and meta.get("user_id"):
+                try:
+                    user_info = await client.get_user_info(meta["user_id"])
+                    return ToolResult(
+                        success=True,
+                        data={
+                            "user_id": meta.get("user_id"),
+                            "team_id": meta.get("team_id"),
+                            "team_name": meta.get("team_name"),
+                            "user": user_info,
+                        },
+                    )
+                except Exception:
+                    return ToolResult(
+                        success=True,
+                        data={
+                            "user_id": meta.get("user_id"),
+                            "team_id": meta.get("team_id"),
+                            "team_name": meta.get("team_name"),
+                            "raw_meta": meta,
+                        },
+                    )
+            return ToolResult(success=False, error="Current user not available in Slack connection metadata")
+
         elif tool_name == "slack.messages.post":
             result = await client.post_message(
                 channel=args["channel"],
                 text=args["text"],
                 thread_ts=args.get("thread_ts"),
-            )
-            return ToolResult(success=True, data=result)
-
-        elif tool_name == "slack.messages.search":
-            result = await client.search_messages(
-                query=args["query"],
-                count=args.get("count", 20),
-                page=args.get("page", 1),
             )
             return ToolResult(success=True, data=result)
 

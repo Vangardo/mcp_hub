@@ -57,6 +57,15 @@ class TeamworkClient:
             params={"page": page, "pageSize": page_size},
         )
 
+    async def get_current_user(self) -> dict:
+        """Get current authenticated user details."""
+        try:
+            return await self._request("GET", "/people/me.json")
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (400, 404):
+                return await self._request("GET", "/me.json")
+            raise
+
     async def list_tasks(
         self,
         project_id: Optional[int] = None,

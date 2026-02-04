@@ -12,6 +12,11 @@ from app.integrations.telegram.client import (
 
 TELEGRAM_TOOLS = [
     ToolDefinition(
+        name="telegram.users.me",
+        description="Get the current authenticated Telegram user (id, username, phone).",
+        input_schema={"type": "object", "properties": {}},
+    ),
+    ToolDefinition(
         name="telegram.dialogs.list",
         description="List Telegram dialogs for the authenticated user",
         input_schema={
@@ -70,6 +75,19 @@ async def execute_tool(
 ) -> ToolResult:
     try:
         client = await get_client(session_string)
+
+        if tool_name == "telegram.users.me":
+            if meta and meta.get("telegram_user_id"):
+                return ToolResult(success=True, data=meta)
+            me = await client.get_me()
+            return ToolResult(
+                success=True,
+                data={
+                    "telegram_user_id": getattr(me, "id", None),
+                    "username": getattr(me, "username", None),
+                    "phone": getattr(me, "phone", None),
+                },
+            )
 
         if tool_name == "telegram.dialogs.list":
             result = await list_dialogs(client, limit=args.get("limit", 50))

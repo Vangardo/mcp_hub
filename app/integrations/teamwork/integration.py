@@ -27,6 +27,23 @@ class TeamworkIntegration(BaseIntegration):
             "company_name": installation.get("name", ""),
             "company_id": installation.get("id"),
         }
+        try:
+            from app.integrations.teamwork.client import TeamworkClient
+            client = TeamworkClient(token_data["access_token"], meta["site_url"])
+            me = await client.get_current_user()
+            person = me.get("person") if isinstance(me, dict) else None
+            if isinstance(person, dict):
+                meta.update(
+                    {
+                        "user_id": person.get("id"),
+                        "first_name": person.get("first-name"),
+                        "last_name": person.get("last-name"),
+                        "email": person.get("email-address"),
+                        "user_name": person.get("user-name"),
+                    }
+                )
+        except Exception:
+            pass
 
         return {
             "access_token": token_data["access_token"],

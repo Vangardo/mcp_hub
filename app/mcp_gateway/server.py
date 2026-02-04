@@ -102,13 +102,37 @@ def unformat_tool_name(name: str, name_format: str) -> str:
 HUB_TOOLS = [
     {
         "name": "hub.integrations.list",
-        "description": "List connected integrations and available tools",
+        "description": "Step 1/3: List integrations connected for the current user. Use this first to discover which providers are available. Set include_tools=false to keep the response small.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "include_tools": {"type": "boolean", "default": True},
+                "include_tools": {"type": "boolean", "default": False},
                 "connected_only": {"type": "boolean", "default": True},
             },
+        },
+    },
+    {
+        "name": "hub.tools.list",
+        "description": "Step 2/3: List tools for a specific provider (e.g., teamwork, slack, telegram, miro). Call this after hub.integrations.list to get provider-specific commands.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "provider": {"type": "string", "description": "Integration name (e.g., teamwork, slack, telegram, miro)"},
+            },
+            "required": ["provider"],
+        },
+    },
+    {
+        "name": "hub.tools.call",
+        "description": "Step 3/3: Call a provider tool via the hub. Use tool_name from hub.tools.list and pass arguments as-is. This avoids loading all tools into context.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "provider": {"type": "string", "description": "Integration name (e.g., teamwork, slack, telegram, miro)"},
+                "tool_name": {"type": "string", "description": "Tool name to call (e.g., teamwork.tasks.create)"},
+                "arguments": {"type": "object", "description": "Arguments for the tool"},
+            },
+            "required": ["provider", "tool_name"],
         },
     },
 ]
@@ -119,32 +143,16 @@ def get_available_tools(
     provider_filter: Optional[str] = None,
     name_format: str = "dot",
 ) -> list[dict]:
-    connected_providers = get_user_connected_providers(user_id)
     tools = []
 
-    if provider_filter:
-        connected_providers = [p for p in connected_providers if p == provider_filter]
-
-    if not provider_filter:
-        for tool in HUB_TOOLS:
-            tools.append(
-                {
-                    "name": format_tool_name(tool["name"], name_format),
-                    "description": tool["description"],
-                    "inputSchema": tool["inputSchema"],
-                }
-            )
-
-    for integration in integration_registry.list_configured():
-        if integration.name not in connected_providers:
-            continue
-
-        for tool in integration.get_tools():
-            tools.append({
-                "name": format_tool_name(tool.name, name_format),
-                "description": tool.description,
-                "inputSchema": tool.input_schema,
-            })
+    for tool in HUB_TOOLS:
+        tools.append(
+            {
+                "name": format_tool_name(tool["name"], name_format),
+                "description": tool["description"],
+                "inputSchema": tool["inputSchema"],
+            }
+        )
 
     return tools
 
@@ -211,11 +219,11 @@ async def handle_call_tool(
 
     if tool_name == "hub.integrations.list":
         connected_providers = set(get_user_connected_providers(user["id"]))
-        include_tools = True
+        include_tools = False
         connected_only = True
-        if params:
-            include_tools = params.get("include_tools", True)
-            connected_only = params.get("connected_only", True)
+        if arguments:
+            include_tools = arguments.get("include_tools", False)
+            connected_only = arguments.get("connected_only", True)
 
         integrations = []
         for integration in integration_registry.list_all():
@@ -245,7 +253,7 @@ async def handle_call_tool(
             user_id=user["id"],
             provider="hub",
             action="hub.integrations.list",
-            request_data=params,
+            request_data=arguments,
             response_data={"count": len(integrations)},
             status="ok",
         )
@@ -258,6 +266,94 @@ async def handle_call_tool(
                 }
             ],
         }
+
+    if tool_name == "hub.tools.list":
+        provider = (arguments or {}).get("provider")
+        if not provider:
+            raise ValueError("Missing provider")
+        if provider_filter and provider != provider_filter:
+            raise ValueError(f"Provider not allowed for provider filter: {provider_filter}")
+
+        connected_providers = set(get_user_connected_providers(user["id"]))
+        integration = integration_registry.get(provider)
+        if not integration:
+            raise ValueError(f"Unknown provider: {provider}")
+        if provider not in connected_providers:
+            raise ValueError(f"Provider not connected: {provider}")
+        if not integration.is_configured():
+            raise ValueError(f"Provider not configured: {provider}")
+
+        tools = [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": tool.input_schema,
+            }
+            for tool in integration.get_tools()
+        ]
+
+        safe_audit_log(
+            user_id=user["id"],
+            provider="hub",
+            action="hub.tools.list",
+            request_data=arguments,
+            response_data={"count": len(tools), "provider": provider},
+            status="ok",
+        )
+
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps({"provider": provider, "tools": tools}, default=str, ensure_ascii=False),
+                }
+            ],
+        }
+
+    if tool_name == "hub.tools.call":
+        provider = (arguments or {}).get("provider")
+        raw_tool_name = (arguments or {}).get("tool_name")
+        nested_arguments = (arguments or {}).get("arguments", {})
+        if not provider or not raw_tool_name:
+            raise ValueError("Missing provider or tool_name")
+        if provider_filter and provider != provider_filter:
+            raise ValueError(f"Provider not allowed for provider filter: {provider_filter}")
+
+        connected_providers = set(get_user_connected_providers(user["id"]))
+        integration = integration_registry.get(provider)
+        if not integration:
+            raise ValueError(f"Unknown provider: {provider}")
+        if provider not in connected_providers:
+            raise ValueError(f"Provider not connected: {provider}")
+        if not integration.is_configured():
+            raise ValueError(f"Provider not configured: {provider}")
+
+        tool_name = raw_tool_name.replace("__", ".")
+        if not tool_name.startswith(f"{provider}."):
+            raise ValueError("tool_name must be prefixed with provider (e.g., teamwork.tasks.list)")
+
+        result = await execute_tool(user["id"], tool_name, nested_arguments)
+
+        safe_audit_log(
+            user_id=user["id"],
+            provider=provider,
+            action="hub.tools.call",
+            request_data={"tool_name": tool_name, "arguments": nested_arguments},
+            response_data=result.data if result.success else None,
+            status="ok" if result.success else "error",
+            error_text=result.error if not result.success else None,
+        )
+
+        if result.success:
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(result.data, default=str, ensure_ascii=False),
+                    }
+                ],
+            }
+        return {"content": [{"type": "text", "text": f"Error: {result.error}"}]}
 
     if provider_filter:
         if not tool_name.startswith(f"{provider_filter}."):

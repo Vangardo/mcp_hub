@@ -91,6 +91,11 @@ MIRO_TOOLS = [
         },
     ),
     ToolDefinition(
+        name="miro.users.me",
+        description="Get the current authenticated Miro user (id, name). Useful for 'my boards' or 'assign to me'.",
+        input_schema={"type": "object", "properties": {}},
+    ),
+    ToolDefinition(
         name="miro.boards.share",
         description="Share a Miro board with users by email. Set role to control their access level.",
         input_schema={
@@ -157,24 +162,6 @@ MIRO_TOOLS = [
     ),
     # === STICKY NOTES ===
     ToolDefinition(
-        name="miro.sticky_notes.create",
-        description="Create a sticky note on a Miro board. Specify content text and optional color and position.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "board_id": {"type": "string", "description": "Board ID"},
-                "content": {"type": "string", "description": "Sticky note text content (supports basic HTML: <b>, <i>, <a>)"},
-                "color": {
-                    "type": "string",
-                    "description": "Fill color hex (#RRGGBB) e.g. #FEF445 for yellow, #D5F692 for green",
-                },
-                "position_x": {"type": "number", "description": "X position on the board (center)"},
-                "position_y": {"type": "number", "description": "Y position on the board (center)"},
-            },
-            "required": ["board_id", "content"],
-        },
-    ),
-    ToolDefinition(
         name="miro.sticky_notes.bulk_create",
         description="Create up to 10 sticky notes on a Miro board (processed sequentially)",
         input_schema={
@@ -216,21 +203,6 @@ MIRO_TOOLS = [
     ),
     # === TEXT ===
     ToolDefinition(
-        name="miro.text.create",
-        description="Create a text item on a Miro board. For free-form text labels and annotations.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "board_id": {"type": "string", "description": "Board ID"},
-                "content": {"type": "string", "description": "Text content (supports basic HTML)"},
-                "position_x": {"type": "number", "description": "X position on the board"},
-                "position_y": {"type": "number", "description": "Y position on the board"},
-                "font_size": {"type": "integer", "description": "Font size in pixels"},
-            },
-            "required": ["board_id", "content"],
-        },
-    ),
-    ToolDefinition(
         name="miro.text.bulk_create",
         description="Create up to 10 text items on a Miro board (processed sequentially)",
         input_schema={
@@ -257,33 +229,6 @@ MIRO_TOOLS = [
         },
     ),
     # === SHAPES ===
-    ToolDefinition(
-        name="miro.shapes.create",
-        description="Create a shape on a Miro board. Useful for diagrams, flowcharts, and visual layouts.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "board_id": {"type": "string", "description": "Board ID"},
-                "content": {"type": "string", "description": "Text inside the shape"},
-                "shape": {
-                    "type": "string",
-                    "description": "Shape type",
-                    "enum": ["rectangle", "circle", "triangle", "rhombus", "round_rectangle",
-                             "parallelogram", "trapezoid", "pentagon", "hexagon", "octagon",
-                             "wedge_round_rectangle_callout", "star", "flow_chart_predefined_process",
-                             "right_arrow", "left_arrow", "left_right_arrow", "cloud", "cross",
-                             "can"],
-                    "default": "rectangle",
-                },
-                "color": {"type": "string", "description": "Fill color hex (#RRGGBB)"},
-                "position_x": {"type": "number", "description": "X position"},
-                "position_y": {"type": "number", "description": "Y position"},
-                "width": {"type": "number", "description": "Shape width in pixels"},
-                "height": {"type": "number", "description": "Shape height in pixels"},
-            },
-            "required": ["board_id"],
-        },
-    ),
     ToolDefinition(
         name="miro.shapes.bulk_create",
         description="Create up to 10 shapes on a Miro board (processed sequentially)",
@@ -323,21 +268,6 @@ MIRO_TOOLS = [
     ),
     # === CARDS ===
     ToolDefinition(
-        name="miro.cards.create",
-        description="Create a card on a Miro board. Cards are like mini documents with a title and description, useful for task tracking and Kanban boards.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "board_id": {"type": "string", "description": "Board ID"},
-                "title": {"type": "string", "description": "Card title"},
-                "description": {"type": "string", "description": "Card description (supports HTML)"},
-                "position_x": {"type": "number", "description": "X position"},
-                "position_y": {"type": "number", "description": "Y position"},
-            },
-            "required": ["board_id", "title"],
-        },
-    ),
-    ToolDefinition(
         name="miro.cards.bulk_create",
         description="Create up to 10 cards on a Miro board (processed sequentially)",
         input_schema={
@@ -364,24 +294,6 @@ MIRO_TOOLS = [
         },
     ),
     # === CONNECTORS ===
-    ToolDefinition(
-        name="miro.connectors.create",
-        description="Create a connector (arrow/line) between two items on a Miro board. Use items.list to get item IDs.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "board_id": {"type": "string", "description": "Board ID"},
-                "start_item_id": {"type": "string", "description": "Item ID where connector starts"},
-                "end_item_id": {"type": "string", "description": "Item ID where connector ends"},
-                "style": {
-                    "type": "string",
-                    "description": "Line style",
-                    "enum": ["normal", "dashed", "dotted"],
-                },
-            },
-            "required": ["board_id", "start_item_id", "end_item_id"],
-        },
-    ),
     ToolDefinition(
         name="miro.connectors.bulk_create",
         description="Create up to 10 connectors on a Miro board (processed sequentially)",
@@ -468,6 +380,34 @@ async def execute_tool(
             result = await client.list_board_members(args["board_id"])
             return ToolResult(success=True, data=result)
 
+        elif tool_name == "miro.users.me":
+            if meta and meta.get("user_id"):
+                return ToolResult(
+                    success=True,
+                    data={
+                        "user_id": meta.get("user_id"),
+                        "user_name": meta.get("user_name"),
+                        "team_id": meta.get("team_id"),
+                        "team_name": meta.get("team_name"),
+                        "raw_meta": meta,
+                    },
+                )
+            result = await client.get_current_user()
+            if isinstance(result, dict):
+                team = result.get("team", {}) if isinstance(result.get("team"), dict) else {}
+                user = result.get("user", {}) if isinstance(result.get("user"), dict) else {}
+                return ToolResult(
+                    success=True,
+                    data={
+                        "user_id": user.get("id"),
+                        "user_name": user.get("name"),
+                        "team_id": team.get("id"),
+                        "team_name": team.get("name"),
+                        "raw": result,
+                    },
+                )
+            return ToolResult(success=True, data=result)
+
         elif tool_name == "miro.boards.share":
             result = await client.share_board(
                 board_id=args["board_id"],
@@ -495,16 +435,6 @@ async def execute_tool(
             return ToolResult(success=True, data=result)
 
         # === STICKY NOTES ===
-        elif tool_name == "miro.sticky_notes.create":
-            result = await client.create_sticky_note(
-                board_id=args["board_id"],
-                content=args["content"],
-                color=args.get("color"),
-                position_x=args.get("position_x"),
-                position_y=args.get("position_y"),
-            )
-            return ToolResult(success=True, data=result)
-
         elif tool_name == "miro.sticky_notes.bulk_create":
             items = args.get("items") or []
             if len(items) > 10:
@@ -538,16 +468,6 @@ async def execute_tool(
             return ToolResult(success=True, data=result)
 
         # === TEXT ===
-        elif tool_name == "miro.text.create":
-            result = await client.create_text(
-                board_id=args["board_id"],
-                content=args["content"],
-                position_x=args.get("position_x"),
-                position_y=args.get("position_y"),
-                font_size=args.get("font_size"),
-            )
-            return ToolResult(success=True, data=result)
-
         elif tool_name == "miro.text.bulk_create":
             items = args.get("items") or []
             if len(items) > 10:
@@ -572,19 +492,6 @@ async def execute_tool(
             return ToolResult(success=True, data={"count": len(results), "results": results})
 
         # === SHAPES ===
-        elif tool_name == "miro.shapes.create":
-            result = await client.create_shape(
-                board_id=args["board_id"],
-                content=args.get("content"),
-                shape=args.get("shape", "rectangle"),
-                color=args.get("color"),
-                position_x=args.get("position_x"),
-                position_y=args.get("position_y"),
-                width=args.get("width"),
-                height=args.get("height"),
-            )
-            return ToolResult(success=True, data=result)
-
         elif tool_name == "miro.shapes.bulk_create":
             items = args.get("items") or []
             if len(items) > 10:
@@ -612,16 +519,6 @@ async def execute_tool(
             return ToolResult(success=True, data={"count": len(results), "results": results})
 
         # === CARDS ===
-        elif tool_name == "miro.cards.create":
-            result = await client.create_card(
-                board_id=args["board_id"],
-                title=args["title"],
-                description=args.get("description"),
-                position_x=args.get("position_x"),
-                position_y=args.get("position_y"),
-            )
-            return ToolResult(success=True, data=result)
-
         elif tool_name == "miro.cards.bulk_create":
             items = args.get("items") or []
             if len(items) > 10:
@@ -646,15 +543,6 @@ async def execute_tool(
             return ToolResult(success=True, data={"count": len(results), "results": results})
 
         # === CONNECTORS ===
-        elif tool_name == "miro.connectors.create":
-            result = await client.create_connector(
-                board_id=args["board_id"],
-                start_item_id=args["start_item_id"],
-                end_item_id=args["end_item_id"],
-                style=args.get("style"),
-            )
-            return ToolResult(success=True, data=result)
-
         elif tool_name == "miro.connectors.bulk_create":
             items = args.get("items") or []
             if len(items) > 10:
