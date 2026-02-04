@@ -1,6 +1,15 @@
 from typing import Optional, Any
+import asyncio
+import logging
 
 import httpx
+
+logger = logging.getLogger(__name__)
+
+# Retry config
+MAX_RETRIES = 3
+DEFAULT_RETRY_DELAY = 5  # seconds
+MAX_RETRY_DELAY = 30  # cap Retry-After to 30s, don't wait minutes
 
 
 class FigmaClient:
@@ -29,21 +38,67 @@ class FigmaClient:
         json_data: Optional[dict] = None,
     ) -> dict:
         url = f"{self.BASE_URL}{endpoint}"
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method=method,
-                url=url,
-                headers=self._headers(),
-                params=params,
-                json=json_data,
-                timeout=30.0,
-            )
+
+        for attempt in range(MAX_RETRIES + 1):
+            async with httpx.AsyncClient() as client:
+                response = await client.request(
+                    method=method,
+                    url=url,
+                    headers=self._headers(),
+                    params=params,
+                    json=json_data,
+                    timeout=60.0,
+                )
+
+            if response.status_code == 429:
+                # Parse Retry-After header
+                retry_after_raw = response.headers.get("Retry-After", "")
+                try:
+                    retry_after_sec = int(retry_after_raw)
+                except (ValueError, TypeError):
+                    retry_after_sec = 0
+
+                # If Figma says wait more than 60s, don't retry — it's a hard ban
+                if retry_after_sec > 60:
+                    hours = retry_after_sec // 3600
+                    mins = (retry_after_sec % 3600) // 60
+                    raise httpx.HTTPStatusError(
+                        f"Figma rate limit hit. Cooldown: ~{hours}h {mins}m. "
+                        f"This usually happens when fetching large files or files outside your team. "
+                        f"Wait and retry, or use a different Figma token/account.",
+                        request=response.request,
+                        response=response,
+                    )
+
+                if attempt >= MAX_RETRIES:
+                    raise httpx.HTTPStatusError(
+                        f"Figma rate limit exceeded after {MAX_RETRIES} retries.",
+                        request=response.request,
+                        response=response,
+                    )
+
+                delay = max(retry_after_sec, DEFAULT_RETRY_DELAY * (attempt + 1))
+                delay = min(delay, MAX_RETRY_DELAY)
+                logger.warning(
+                    f"Figma 429 on {method} {endpoint}, attempt {attempt + 1}/{MAX_RETRIES}, "
+                    f"waiting {delay}s"
+                )
+                await asyncio.sleep(delay)
+                continue
+
             response.raise_for_status()
 
             if response.status_code == 204 or not response.content:
                 return {"success": True, "status_code": response.status_code}
 
             return response.json()
+
+        # Should not reach here, but just in case
+        raise httpx.HTTPStatusError(
+            "Max retries exceeded",
+            request=response.request,
+            response=response,
+        )
 
     # === USER ===
 

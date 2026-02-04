@@ -5,57 +5,133 @@ from app.integrations.figma.client import FigmaClient
 
 
 FIGMA_TOOLS = [
-    # === USER ===
+    # =====================================================
+    # PRIMARY TOOL — use this for all coding/design tasks
+    # =====================================================
     ToolDefinition(
-        name="figma.users.me",
-        description="Get the current authenticated Figma user (id, handle, email). Useful for identifying the user.",
-        input_schema={"type": "object", "properties": {}},
+        name="figma.dev.get_page",
+        description=(
+            "THE ONLY TOOL YOU NEED for coding HTML/CSS from Figma. Two modes:\n"
+            "\n"
+            "MODE 1 — OVERVIEW (without node_id): Call first to see file structure. "
+            "Returns a map of all pages and frames with their node IDs, dimensions, and element counts. "
+            "Pick the frames you want to code.\n"
+            "\n"
+            "MODE 2 — CSS OUTPUT (with node_id): Returns complete CSS-ready code: "
+            "design tokens as CSS variables, all image URLs auto-resolved, all vector icons exported as SVG, "
+            "and an HTML component tree with real CSS properties on every element "
+            "(display, flex, gap, padding, background, font, color, border-radius, box-shadow, etc). "
+            "Pass multiple node IDs comma-separated to batch them in ONE call.\n"
+            "\n"
+            "WORKFLOW: 1) Call without node_id → see frames and pick IDs. "
+            "2) Call with node_id=\"1:2,3:4\" → get CSS + list of found images/icons. "
+            "3) ONLY IF NEEDED: fetch images via figma.images.get_fills or figma.images.export. "
+            "Minimal calls = fast, no rate limits.\n"
+            "\n"
+            "NEVER use figma.files.get for coding — it returns raw JSON that can be millions of tokens."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "file_key": {"type": "string", "description": "File key from Figma URL (the part after /file/ or /design/)"},
+                "node_id": {
+                    "type": "string",
+                    "description": (
+                        "Omit for overview mode (see file structure). "
+                        "Set to frame/component node IDs for CSS output mode. "
+                        "Comma-separated to batch multiple sections in one call: \"1:2,3:4,5:6\""
+                    ),
+                },
+                "depth": {
+                    "type": "integer",
+                    "description": "Max tree depth. Overview default: 2. CSS mode default: unlimited.",
+                },
+                "resolve_images": {
+                    "type": "boolean",
+                    "description": (
+                        "Fetch image URLs and export SVG icons (costs 2 extra API calls). "
+                        "Default: false — images are listed but not fetched, saving API quota. "
+                        "Set to true only when you need actual image URLs for implementation. "
+                        "You can also fetch them separately: figma.images.get_fills and figma.images.export."
+                    ),
+                    "default": False,
+                },
+            },
+            "required": ["file_key"],
+        },
     ),
-    # === LAYOUT (compact) ===
+    # =====================================================
+    # HELPER — use to discover page structure & node IDs
+    # =====================================================
     ToolDefinition(
         name="figma.files.get_layout",
         description=(
-            "Get a compact, CSS-oriented layout tree from a Figma file. "
-            "Returns only structure, dimensions, auto-layout, colors (hex), fonts, text content, "
-            "border-radius, shadows — everything needed for HTML/CSS coding. "
-            "Much smaller than raw file data (typically 2-5% of original size). "
-            "Use this instead of figma.files.get when you need to code a design. "
-            "Supports output as structured JSON or as a human-readable text tree. "
-            "You can target specific nodes by ID to reduce output further."
+            "Alternative to figma.dev.get_page overview mode. "
+            "Returns a compact text tree with node types, names, IDs, dimensions, and layout info. "
+            "Prefer figma.dev.get_page (without node_id) for the standard workflow — it gives a cleaner overview."
         ),
         input_schema={
             "type": "object",
             "properties": {
                 "file_key": {"type": "string", "description": "File key from Figma URL"},
-                "node_id": {"type": "string", "description": "Specific node ID to extract (reduces output). Comma-separated for multiple."},
-                "depth": {"type": "integer", "description": "Max depth of tree traversal (default: unlimited)"},
+                "node_id": {"type": "string", "description": "Specific node ID to focus on. Comma-separated for multiple."},
+                "depth": {"type": "integer", "description": "Max depth (use 1-2 for overview, higher for detail)"},
                 "format": {
                     "type": "string",
                     "enum": ["json", "text"],
-                    "description": "Output format: 'json' for structured data, 'text' for readable tree (default: text)",
+                    "description": "Output format: 'text' (default, readable tree) or 'json' (structured)",
                     "default": "text",
                 },
             },
             "required": ["file_key"],
         },
     ),
-    # === FILES (raw) ===
+    # =====================================================
+    # UTILITY TOOLS
+    # =====================================================
     ToolDefinition(
-        name="figma.files.get",
-        description="Get a Figma file by its file key. Returns the full document tree with pages, frames, and layers. Use depth to limit tree traversal. The file key is the string after /file/ or /design/ in a Figma URL.",
+        name="figma.users.me",
+        description="Get the current Figma user info (id, handle, email).",
+        input_schema={"type": "object", "properties": {}},
+    ),
+    ToolDefinition(
+        name="figma.files.get_meta",
+        description="Get lightweight file metadata (name, last modified, version, thumbnail). Fast, no tree data.",
         input_schema={
             "type": "object",
             "properties": {
-                "file_key": {"type": "string", "description": "File key from Figma URL (e.g., 'abc123XYZ')"},
-                "depth": {"type": "integer", "description": "Depth of tree traversal (1=pages only, 2=pages+frames, etc.)"},
-                "node_id": {"type": "string", "description": "Return only the subtree starting from this node ID"},
+                "file_key": {"type": "string", "description": "File key"},
+            },
+            "required": ["file_key"],
+        },
+    ),
+    # =====================================================
+    # RAW API — avoid for coding tasks (huge output)
+    # =====================================================
+    ToolDefinition(
+        name="figma.files.get",
+        description=(
+            "WARNING: Returns raw Figma JSON — can be MILLIONS of tokens on large files. "
+            "Do NOT use for coding/design tasks. Use figma.dev.get_page instead. "
+            "Only use this for inspecting raw API data or debugging. Always set depth=1 or depth=2."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "file_key": {"type": "string", "description": "File key from Figma URL"},
+                "depth": {"type": "integer", "description": "REQUIRED for safety. Depth of tree traversal (1=pages, 2=frames)"},
+                "node_id": {"type": "string", "description": "Return only subtree from this node ID"},
             },
             "required": ["file_key"],
         },
     ),
     ToolDefinition(
         name="figma.files.get_nodes",
-        description="Get specific nodes from a Figma file by their IDs. More efficient than fetching the entire file when you know which nodes you need.",
+        description=(
+            "WARNING: Returns raw Figma JSON for specific nodes — can be very large. "
+            "For coding tasks, use figma.dev.get_page with node_id instead. "
+            "Only use this for raw API inspection or debugging."
+        ),
         input_schema={
             "type": "object",
             "properties": {
@@ -63,28 +139,22 @@ FIGMA_TOOLS = [
                 "ids": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of node IDs to retrieve (e.g., ['1:2', '3:4'])",
+                    "description": "List of node IDs",
                 },
-                "depth": {"type": "integer", "description": "Depth of tree traversal for each node"},
+                "depth": {"type": "integer", "description": "Depth of tree traversal"},
             },
             "required": ["file_key", "ids"],
-        },
-    ),
-    ToolDefinition(
-        name="figma.files.get_meta",
-        description="Get lightweight metadata for a Figma file (name, last modified date, version, thumbnail URL). Much faster than fetching the full file.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "file_key": {"type": "string", "description": "File key"},
-            },
-            "required": ["file_key"],
         },
     ),
     # === IMAGES ===
     ToolDefinition(
         name="figma.images.export",
-        description="Export rendered images from Figma file nodes. Returns temporary URLs for downloaded images. Supports PNG, SVG, JPG, and PDF formats.",
+        description=(
+            "Export nodes as images (PNG, SVG, JPG, PDF). Batch multiple node IDs in one call. "
+            "Use this after figma.dev.get_page to export specific icons/vectors as SVG. "
+            "The ASSETS section of dev.get_page output lists vector node IDs you can pass here. "
+            "Keep batch size under 20 to avoid rate limits."
+        ),
         input_schema={
             "type": "object",
             "properties": {
@@ -92,11 +162,11 @@ FIGMA_TOOLS = [
                 "ids": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Node IDs to export as images (e.g., ['1:2', '3:4'])",
+                    "description": "Node IDs to export (batch them — one API call for all)",
                 },
                 "format": {
                     "type": "string",
-                    "description": "Image format",
+                    "description": "Image format: svg for icons, png for photos/complex graphics",
                     "enum": ["png", "svg", "jpg", "pdf"],
                     "default": "png",
                 },
@@ -107,7 +177,11 @@ FIGMA_TOOLS = [
     ),
     ToolDefinition(
         name="figma.images.get_fills",
-        description="Get download URLs for all images used as fills in a Figma file. Returns a mapping of image references to their URLs.",
+        description=(
+            "Get download URLs for all background images in a Figma file. "
+            "Use after figma.dev.get_page to resolve image_ref values from the ASSETS section. "
+            "One API call returns URLs for ALL image fills in the file."
+        ),
         input_schema={
             "type": "object",
             "properties": {
@@ -272,8 +346,21 @@ async def execute_tool(
     client = FigmaClient(access_token)
 
     try:
+        # === DEV (CSS-ready) ===
+        if tool_name == "figma.dev.get_page":
+            from app.integrations.figma.css_extractor import extract_page_css
+
+            result_text = await extract_page_css(
+                client=client,
+                file_key=args["file_key"],
+                node_id=args.get("node_id"),
+                depth=args.get("depth"),
+                resolve_images=args.get("resolve_images", False),
+            )
+            return ToolResult(success=True, data={"output": result_text})
+
         # === LAYOUT ===
-        if tool_name == "figma.files.get_layout":
+        elif tool_name == "figma.files.get_layout":
             from app.integrations.figma.layout import transform_to_layout, layout_to_text
 
             node_id = args.get("node_id")
@@ -285,15 +372,15 @@ async def execute_tool(
                 raw = await client.get_file_nodes(
                     file_key=args["file_key"],
                     ids=ids,
-                    depth=depth,
+                    depth=depth or 10,
                 )
             else:
                 raw = await client.get_file(
                     file_key=args["file_key"],
-                    depth=depth,
+                    depth=depth or 2,
                 )
 
-            layout = transform_to_layout(raw, max_depth=depth or 50)
+            layout = transform_to_layout(raw, max_depth=depth or 10)
 
             if output_format == "text":
                 text = layout_to_text(layout)
