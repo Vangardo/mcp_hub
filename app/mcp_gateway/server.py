@@ -41,6 +41,7 @@ def safe_audit_log(
     request_data: Optional[dict],
     response_data: Optional[Any],
     status: str,
+    tool_name: Optional[str] = None,
     error_text: Optional[str] = None,
 ):
     try:
@@ -48,6 +49,7 @@ def safe_audit_log(
             user_id=user_id,
             provider=provider,
             action=action,
+            tool_name=tool_name,
             request_data=request_data,
             response_data=response_data,
             status=status,
@@ -338,6 +340,7 @@ async def handle_call_tool(
             user_id=user["id"],
             provider=provider,
             action="hub.tools.call",
+            tool_name=tool_name,
             request_data={"tool_name": tool_name, "arguments": nested_arguments},
             response_data=result.data if result.success else None,
             status="ok" if result.success else "error",
@@ -367,6 +370,7 @@ async def handle_call_tool(
         user_id=user["id"],
         provider=provider,
         action=tool_name,
+        tool_name=tool_name,
         request_data=arguments,
         response_data=result.data if result.success else None,
         status="ok" if result.success else "error",

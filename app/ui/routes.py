@@ -1,4 +1,5 @@
 from typing import Optional
+from urllib.parse import quote
 import json
 import os
 
@@ -224,7 +225,11 @@ async def disconnect_integration_ui(
     with get_db() as conn:
         delete_oauth_connection(conn, current_user.id, name)
 
-    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    provider_label = quote(integration.display_name)
+    return RedirectResponse(
+        url=f"/?success=disconnected&provider={provider_label}",
+        status_code=status.HTTP_302_FOUND,
+    )
 
 
 @router.get("/admin/users", response_class=HTMLResponse)
@@ -261,6 +266,8 @@ async def admin_audit_page(
     admin: User = Depends(require_admin),
     user_id: Optional[int] = Query(None),
     provider: Optional[str] = Query(None),
+    action: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     offset: int = Query(0),
@@ -269,57 +276,82 @@ async def admin_audit_page(
         cursor = conn.execute("SELECT id, email FROM users ORDER BY email")
         users = [dict(row) for row in cursor.fetchall()]
 
+        # Build shared WHERE clause for filtered stats
+        where_clauses = ["1=1"]
+        where_params: list = []
+
+        if user_id is not None:
+            where_clauses.append("a.user_id = ?")
+            where_params.append(user_id)
+
+        if provider:
+            where_clauses.append("a.provider = ?")
+            where_params.append(provider)
+
+        if action:
+            where_clauses.append("COALESCE(a.tool_name, a.action) = ?")
+            where_params.append(action)
+
+        if status_filter:
+            where_clauses.append("a.status = ?")
+            where_params.append(status_filter)
+
+        if date_from:
+            where_clauses.append("a.created_at >= ?")
+            where_params.append(date_from)
+
+        if date_to:
+            where_clauses.append("a.created_at <= ?")
+            where_params.append(date_to + " 23:59:59")
+
+        where_sql = " AND ".join(where_clauses)
+        has_filters = len(where_params) > 0
+
+        # Stats: recalculate based on active filters
         stats = {}
         stats["total_calls"] = conn.execute(
-            "SELECT COUNT(*) as count FROM audit_logs"
+            f"SELECT COUNT(*) as count FROM audit_logs a WHERE {where_sql}",
+            where_params,
         ).fetchone()["count"]
         stats["calls_24h"] = conn.execute(
-            "SELECT COUNT(*) as count FROM audit_logs WHERE datetime(created_at) >= datetime('now', '-1 day')"
+            f"SELECT COUNT(*) as count FROM audit_logs a WHERE {where_sql} AND datetime(a.created_at) >= datetime('now', '-1 day')",
+            where_params,
         ).fetchone()["count"]
         stats["unique_users"] = conn.execute(
-            "SELECT COUNT(DISTINCT user_id) as count FROM audit_logs WHERE user_id IS NOT NULL"
+            f"SELECT COUNT(DISTINCT a.user_id) as count FROM audit_logs a WHERE {where_sql} AND a.user_id IS NOT NULL",
+            where_params,
         ).fetchone()["count"]
-        stats["active_users"] = conn.execute(
-            "SELECT COUNT(*) as count FROM users WHERE is_active = 1 AND status = ?",
-            (UserStatus.APPROVED.value,),
+        stats["errors"] = conn.execute(
+            f"SELECT COUNT(*) as count FROM audit_logs a WHERE {where_sql} AND a.status = 'error'",
+            where_params,
         ).fetchone()["count"]
         stats["active_connections"] = conn.execute(
             "SELECT COUNT(*) as count FROM connections WHERE is_connected = 1"
         ).fetchone()["count"]
+        stats["has_filters"] = has_filters
 
         cursor = conn.execute(
             "SELECT provider, COUNT(*) as count FROM connections WHERE is_connected = 1 GROUP BY provider ORDER BY count DESC"
         )
         connections_by_provider = [dict(row) for row in cursor.fetchall()]
 
-        query = """
-            SELECT a.*, u.email as user_email
+        # Get distinct actions for the filter dropdown
+        cursor = conn.execute(
+            "SELECT DISTINCT COALESCE(tool_name, action) AS action_display FROM audit_logs ORDER BY action_display"
+        )
+        distinct_actions = [row["action_display"] for row in cursor.fetchall()]
+
+        # Fetch logs
+        query = f"""
+            SELECT a.*, COALESCE(a.tool_name, a.action) AS action_display, u.email as user_email
             FROM audit_logs a
             LEFT JOIN users u ON a.user_id = u.id
-            WHERE 1=1
+            WHERE {where_sql}
+            ORDER BY a.created_at DESC LIMIT 100 OFFSET ?
         """
-        params: list = []
+        log_params = list(where_params) + [offset]
 
-        if user_id is not None:
-            query += " AND a.user_id = ?"
-            params.append(user_id)
-
-        if provider:
-            query += " AND a.provider = ?"
-            params.append(provider)
-
-        if date_from:
-            query += " AND a.created_at >= ?"
-            params.append(date_from)
-
-        if date_to:
-            query += " AND a.created_at <= ?"
-            params.append(date_to + " 23:59:59")
-
-        query += " ORDER BY a.created_at DESC LIMIT 100 OFFSET ?"
-        params.append(offset)
-
-        cursor = conn.execute(query, params)
+        cursor = conn.execute(query, log_params)
         logs = [dict(row) for row in cursor.fetchall()]
 
     return templates.TemplateResponse(
@@ -332,9 +364,12 @@ async def admin_audit_page(
             "logs": logs,
             "stats": stats,
             "connections_by_provider": connections_by_provider,
+            "distinct_actions": distinct_actions,
             "filters": {
                 "user_id": user_id,
                 "provider": provider,
+                "action": action,
+                "status": status_filter,
                 "date_from": date_from,
                 "date_to": date_to,
                 "offset": offset,

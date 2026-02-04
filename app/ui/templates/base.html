@@ -139,6 +139,11 @@
             showToast(`Successfully connected to ${params.get('provider')}!`, 'success');
             window.history.replaceState({}, '', window.location.pathname);
         }
+        if (params.get('success') === 'disconnected') {
+            const provider = params.get('provider');
+            showToast(`Disconnected from ${provider || 'integration'}.`, 'success');
+            window.history.replaceState({}, '', window.location.pathname);
+        }
         if (params.get('error')) {
             showToast(`Error: ${params.get('message') || params.get('error')}`, 'error');
             window.history.replaceState({}, '', window.location.pathname);

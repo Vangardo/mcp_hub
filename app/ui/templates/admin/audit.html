@@ -11,20 +11,20 @@
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-4">
-            <p class="text-xs text-slate-500">Total tool calls</p>
+            <p class="text-xs text-slate-500">Total calls{% if stats.has_filters %} <span class="text-primary-600">(filtered)</span>{% endif %}</p>
             <p class="mt-1 text-2xl font-semibold text-slate-900">{{ stats.total_calls }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-4">
-            <p class="text-xs text-slate-500">Calls (24h)</p>
+            <p class="text-xs text-slate-500">Calls (24h){% if stats.has_filters %} <span class="text-primary-600">(filtered)</span>{% endif %}</p>
             <p class="mt-1 text-2xl font-semibold text-slate-900">{{ stats.calls_24h }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-4">
-            <p class="text-xs text-slate-500">Unique users</p>
+            <p class="text-xs text-slate-500">Unique users{% if stats.has_filters %} <span class="text-primary-600">(filtered)</span>{% endif %}</p>
             <p class="mt-1 text-2xl font-semibold text-slate-900">{{ stats.unique_users }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-4">
-            <p class="text-xs text-slate-500">Active users</p>
-            <p class="mt-1 text-2xl font-semibold text-slate-900">{{ stats.active_users }}</p>
+            <p class="text-xs text-slate-500">Errors{% if stats.has_filters %} <span class="text-primary-600">(filtered)</span>{% endif %}</p>
+            <p class="mt-1 text-2xl font-semibold {% if stats.errors > 0 %}text-red-600{% else %}text-slate-900{% endif %}">{{ stats.errors }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-4">
             <p class="text-xs text-slate-500">Connected integrations</p>
@@ -52,10 +52,22 @@
 
     <!-- Filters -->
     <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6">
-        <form id="filter-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-slate-900">Filters</h2>
+            {% if stats.has_filters %}
+            <a href="/admin/audit"
+               class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Clear All
+            </a>
+            {% endif %}
+        </div>
+        <form id="filter-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">User</label>
-                <select name="user_id" class="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <select name="user_id" class="audit-filter block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="">All Users</option>
                     {% for u in users %}
                     <option value="{{ u.id }}" {% if filters.user_id == u.id %}selected{% endif %}>{{ u.email }}</option>
@@ -64,33 +76,42 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Provider</label>
-                <select name="provider" class="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <select name="provider" class="audit-filter block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="">All Providers</option>
                     <option value="teamwork" {% if filters.provider == 'teamwork' %}selected{% endif %}>Teamwork</option>
                     <option value="slack" {% if filters.provider == 'slack' %}selected{% endif %}>Slack</option>
                     <option value="miro" {% if filters.provider == 'miro' %}selected{% endif %}>Miro</option>
+                    <option value="figma" {% if filters.provider == 'figma' %}selected{% endif %}>Figma</option>
                     <option value="telegram" {% if filters.provider == 'telegram' %}selected{% endif %}>Telegram</option>
+                    <option value="hub" {% if filters.provider == 'hub' %}selected{% endif %}>Hub</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Action</label>
+                <select name="action" class="audit-filter block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">All Actions</option>
+                    {% for act in distinct_actions %}
+                    <option value="{{ act }}" {% if filters.action == act %}selected{% endif %}>{{ act }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select name="status" class="audit-filter block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">All</option>
+                    <option value="ok" {% if filters.status == 'ok' %}selected{% endif %}>OK</option>
+                    <option value="error" {% if filters.status == 'error' %}selected{% endif %}>Error</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Date From</label>
                 <input type="date" name="date_from" value="{{ filters.date_from or '' }}"
-                       class="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                       class="audit-filter block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Date To</label>
                 <input type="date" name="date_to" value="{{ filters.date_to or '' }}"
-                       class="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-            <div class="flex items-end space-x-2">
-                <button type="submit"
-                        class="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    Apply
-                </button>
-                <a href="/admin/audit"
-                   class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
-                    Clear
-                </a>
+                       class="audit-filter block w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
         </form>
     </div>
@@ -121,7 +142,7 @@
                             {{ log.created_at[:19] }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm text-slate-900">{{ log.user_email or 'Unknown' }}</span>
+                            <span class="text-sm text-slate-900">{{ log.user_email or 'System' }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if log.provider == 'teamwork' %}
@@ -136,16 +157,26 @@
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                 Miro
                             </span>
+                            {% elif log.provider == 'figma' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                                Figma
+                            </span>
                             {% elif log.provider == 'telegram' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
                                 Telegram
                             </span>
+                            {% elif log.provider == 'hub' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                Hub
+                            </span>
                             {% else %}
-                            <span class="text-sm text-slate-500">-</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                {{ log.provider or '-' }}
+                            </span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <code class="text-sm bg-slate-100 text-slate-800 px-2 py-1 rounded font-mono">{{ log.action }}</code>
+                            <code class="text-sm bg-slate-100 text-slate-800 px-2 py-1 rounded font-mono">{{ log.action_display or log.action }}</code>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if log.status == 'ok' %}
@@ -211,6 +242,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
                             <p class="mt-2 text-sm text-slate-500">No audit logs found</p>
+                            {% if stats.has_filters %}
+                            <a href="/admin/audit" class="mt-2 inline-flex items-center text-sm text-primary-600 hover:text-primary-800">Clear filters</a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endif %}
@@ -221,7 +255,7 @@
 
     {% if logs|length >= 100 %}
     <div class="flex justify-center">
-        <a href="?offset={{ (filters.offset or 0) + 100 }}&user_id={{ filters.user_id or '' }}&provider={{ filters.provider or '' }}&date_from={{ filters.date_from or '' }}&date_to={{ filters.date_to or '' }}"
+        <a href="?offset={{ (filters.offset or 0) + 100 }}{% if filters.user_id %}&user_id={{ filters.user_id }}{% endif %}{% if filters.provider %}&provider={{ filters.provider|urlencode }}{% endif %}{% if filters.action %}&action={{ filters.action|urlencode }}{% endif %}{% if filters.status %}&status={{ filters.status|urlencode }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from|urlencode }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to|urlencode }}{% endif %}"
            class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -235,15 +269,22 @@
 
 {% block scripts %}
 <script>
-    document.getElementById('filter-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
+    // Dynamic filters: auto-apply on any change
+    document.querySelectorAll('.audit-filter').forEach(el => {
+        el.addEventListener('change', () => {
+            applyFilters();
+        });
+    });
+
+    function applyFilters() {
+        const form = document.getElementById('filter-form');
+        const formData = new FormData(form);
         const params = new URLSearchParams();
         for (const [key, value] of formData) {
             if (value) params.append(key, value);
         }
         window.location.href = '/admin/audit?' + params.toString();
-    });
+    }
 
     // Expand/collapse log details
     document.querySelectorAll('.log-row').forEach(row => {
