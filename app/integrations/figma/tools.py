@@ -18,7 +18,7 @@ FIGMA_TOOLS = [
             "Pick the frames you want to code.\n"
             "\n"
             "MODE 2 — CSS OUTPUT (with node_id): Returns complete CSS-ready code: "
-            "design tokens as CSS variables, all image URLs auto-resolved, all vector icons exported as SVG, "
+            "design tokens as CSS variables, image placeholders embedded (safe by default), "
             "and an HTML component tree with real CSS properties on every element "
             "(display, flex, gap, padding, background, font, color, border-radius, box-shadow, etc). "
             "Pass multiple node IDs comma-separated to batch them in ONE call.\n"
@@ -26,7 +26,7 @@ FIGMA_TOOLS = [
             "WORKFLOW: 1) Call without node_id → see frames and pick IDs. "
             "2) Call with node_id=\"1:2,3:4\" → get CSS + list of found images/icons. "
             "3) ONLY IF NEEDED: fetch images via figma.images.get_fills or figma.images.export. "
-            "Minimal calls = fast, no rate limits.\n"
+            "Image endpoints can trigger rate limits, so avoid unless necessary.\n"
             "\n"
             "NEVER use figma.files.get for coding — it returns raw JSON that can be millions of tokens."
         ),
@@ -50,7 +50,7 @@ FIGMA_TOOLS = [
                     "type": "boolean",
                     "description": (
                         "Fetch image URLs and export SVG icons (costs 2 extra API calls). "
-                        "Default: false — images are listed but not fetched, saving API quota. "
+                        "Default: false — images are NOT fetched (placeholders are embedded), saving API quota. "
                         "Set to true only when you need actual image URLs for implementation. "
                         "You can also fetch them separately: figma.images.get_fills and figma.images.export."
                     ),

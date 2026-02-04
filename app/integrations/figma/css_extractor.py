@@ -13,6 +13,7 @@ Output sections:
 
 import asyncio
 import math
+from urllib.parse import quote
 from collections import Counter
 from typing import Any, Optional
 
@@ -61,7 +62,11 @@ def _gradient_to_css(fill: dict) -> Optional[str]:
     return f"linear-gradient({stops_css})"
 
 
-def _extract_css_background(fills: list, image_urls: dict) -> Optional[str]:
+def _extract_css_background(
+    fills: list,
+    image_urls: dict,
+    image_placeholders: dict,
+) -> Optional[str]:
     if not fills:
         return None
     for fill in fills:
@@ -73,6 +78,8 @@ def _extract_css_background(fills: list, image_urls: dict) -> Optional[str]:
         if t == "IMAGE":
             ref = fill.get("imageRef", "")
             url = image_urls.get(ref, "")
+            if not url:
+                url = image_placeholders.get(ref, "")
             mode = fill.get("scaleMode", "FILL")
             size = "cover" if mode == "FILL" else "contain" if mode == "FIT" else "auto"
             if url:
@@ -121,7 +128,11 @@ def _extract_css_backdrop_filter(effects: list) -> Optional[str]:
     return " ".join(parts) if parts else None
 
 
-def _node_css(node: dict, image_urls: dict) -> dict[str, str]:
+def _node_css(
+    node: dict,
+    image_urls: dict,
+    image_placeholders: dict,
+) -> dict[str, str]:
     """Extract CSS properties from a Figma node."""
     css: dict[str, str] = {}
     node_type = node.get("type", "")
@@ -185,7 +196,7 @@ def _node_css(node: dict, image_urls: dict) -> dict[str, str]:
 
     # Background
     fills = node.get("fills", [])
-    bg = _extract_css_background(fills, image_urls)
+    bg = _extract_css_background(fills, image_urls, image_placeholders)
     if bg and node_type != "TEXT":
         if bg.startswith("url(") or bg.startswith("linear-") or bg.startswith("radial-") or bg.startswith("conic-"):
             css["background"] = bg
@@ -269,7 +280,7 @@ def _node_css(node: dict, image_urls: dict) -> dict[str, str]:
                 css["text-transform"] = tc
 
         # Text color
-        text_bg = _extract_css_background(fills, image_urls)
+        text_bg = _extract_css_background(fills, image_urls, image_placeholders)
         if text_bg and not text_bg.startswith("url("):
             css["color"] = text_bg
 
@@ -290,7 +301,32 @@ class _Counter:
         return True
 
 
-def _collect_assets(node: dict, image_refs: set, vector_ids: list, depth: int = 0):
+def _build_svg_placeholder(width: int, height: int, label: str) -> str:
+    w = max(1, int(width))
+    h = max(1, int(height))
+    label_text = (label or "Image").strip()
+    if len(label_text) > 40:
+        label_text = label_text[:40] + "..."
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
+        f'<rect width="100%" height="100%" fill="#e2e8f0"/>'
+        f'<rect x="6" y="6" width="{max(1, w-12)}" height="{max(1, h-12)}" '
+        f'fill="#f8fafc" stroke="#cbd5f5" stroke-width="2"/>'
+        f'<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" '
+        f'font-family="Arial, sans-serif" font-size="{max(10, min(18, w // 10))}" fill="#64748b">'
+        f'{label_text}</text>'
+        f'</svg>'
+    )
+    return "data:image/svg+xml;utf8," + quote(svg, safe="")
+
+
+def _collect_assets(
+    node: dict,
+    image_refs: set,
+    vector_ids: list,
+    image_placeholders: dict,
+    depth: int = 0,
+):
     """Walk tree and collect image references and vector node IDs for export."""
     if depth > 50:
         return
@@ -299,7 +335,13 @@ def _collect_assets(node: dict, image_refs: set, vector_ids: list, depth: int = 
 
     for fill in node.get("fills", []):
         if fill.get("type") == "IMAGE" and fill.get("imageRef"):
-            image_refs.add(fill["imageRef"])
+            ref = fill["imageRef"]
+            image_refs.add(ref)
+            if ref not in image_placeholders:
+                bbox = node.get("absoluteBoundingBox", {})
+                w = round(bbox.get("width", 0))
+                h = round(bbox.get("height", 0))
+                image_placeholders[ref] = _build_svg_placeholder(w or 400, h or 300, node.get("name", "Image"))
 
     if node.get("type") == "VECTOR" and len(vector_ids) < MAX_IMAGE_EXPORTS:
         node_id = node.get("id")
@@ -307,7 +349,7 @@ def _collect_assets(node: dict, image_refs: set, vector_ids: list, depth: int = 
             vector_ids.append(node_id)
 
     for child in node.get("children", []):
-        _collect_assets(child, image_refs, vector_ids, depth + 1)
+        _collect_assets(child, image_refs, vector_ids, image_placeholders, depth + 1)
 
 
 def _css_to_str(css: dict[str, str]) -> str:
@@ -355,6 +397,7 @@ def _html_tag(node_type: str) -> str:
 def _render_node(
     node: dict,
     image_urls: dict,
+    image_placeholders: dict,
     counter: _Counter,
     indent: int = 0,
 ) -> list[str]:
@@ -385,7 +428,7 @@ def _render_node(
         lines.append(f'{prefix}</svg>')
         return lines
 
-    css = _node_css(node, image_urls)
+    css = _node_css(node, image_urls, image_placeholders)
     css_str = _css_to_str(css)
     style_attr = f' style="{css_str}"' if css_str else ""
     text = node.get("characters", "")
@@ -403,7 +446,7 @@ def _render_node(
             if counter.truncated:
                 lines.append(f'{prefix}  <!-- TRUNCATED: use node_id="{node_id}" to get this section -->')
                 break
-            lines.extend(_render_node(child, image_urls, counter, indent + 1))
+            lines.extend(_render_node(child, image_urls, image_placeholders, counter, indent + 1))
         lines.append(f'{prefix}</{tag}>')
 
     return lines
@@ -543,7 +586,7 @@ async def extract_page_css(
     node_id: Optional[str] = None,
     depth: Optional[int] = None,
     max_nodes: int = MAX_NODES,
-    resolve_images: bool = True,
+    resolve_images: bool = False,
 ) -> str:
     """
     Main entry point. Two modes:
@@ -575,6 +618,7 @@ async def extract_page_css(
     # Collect image refs and vector IDs
     image_refs: set = set()
     vector_ids: list = []
+    image_placeholders: dict = {}
     root_nodes: list = []
 
     nodes_data = raw.get("nodes", {})
@@ -582,37 +626,40 @@ async def extract_page_css(
         doc = ndata.get("document")
         if doc:
             root_nodes.append(doc)
-            _collect_assets(doc, image_refs, vector_ids)
+            _collect_assets(doc, image_refs, vector_ids, image_placeholders)
 
     # Resolve image fill URLs (with delay to avoid rate limits)
     image_urls: dict = {}
     vector_urls: dict = {}
 
+    skipped_image_fetch = False
     if resolve_images:
-        if image_refs:
-            await asyncio.sleep(1)
-            try:
-                fills_resp = await client.get_image_fills(file_key)
-                meta = fills_resp.get("meta", {})
-                images_map = meta.get("images", {})
-                image_urls.update(images_map)
-            except Exception:
-                pass
+        if len(image_refs) > 20 or len(vector_ids) > 30:
+            skipped_image_fetch = True
+        else:
+            if image_refs:
+                await asyncio.sleep(1)
+                try:
+                    fills_resp = await client.get_image_fills(file_key)
+                    meta = fills_resp.get("meta", {})
+                    images_map = meta.get("images", {})
+                    image_urls.update(images_map)
+                except Exception:
+                    skipped_image_fetch = True
 
-        # Export vectors as SVG (batch, up to limit, with delay)
-        if vector_ids:
-            await asyncio.sleep(1)
-            try:
-                batch = vector_ids[:MAX_IMAGE_EXPORTS]
-                export_resp = await client.get_images(
-                    file_key=file_key,
-                    ids=batch,
-                    format="svg",
-                    scale=1.0,
-                )
-                vector_urls = export_resp.get("images", {})
-            except Exception:
-                pass
+            if vector_ids:
+                await asyncio.sleep(1)
+                try:
+                    batch = vector_ids[:MAX_IMAGE_EXPORTS]
+                    export_resp = await client.get_images(
+                        file_key=file_key,
+                        ids=batch,
+                        format="svg",
+                        scale=1.0,
+                    )
+                    vector_urls = export_resp.get("images", {})
+                except Exception:
+                    skipped_image_fetch = True
 
     # Build output
     output_parts = []
@@ -658,6 +705,8 @@ async def extract_page_css(
             output_parts.append(f" * To export icons as SVG: figma.images.export(file_key, ids=[...], format=\"svg\")")
             output_parts.append(" * Or re-call this tool with resolve_images=true")
             output_parts.append(" */")
+        if skipped_image_fetch:
+            output_parts.append("/* NOTE: Image fetch was skipped or failed to avoid rate limits. */")
 
         output_parts.append("")
 
@@ -666,7 +715,7 @@ async def extract_page_css(
     counter = _Counter(max_nodes)
 
     for node in root_nodes:
-        lines = _render_node(node, image_urls, counter, indent=0)
+        lines = _render_node(node, image_urls, image_placeholders, counter, indent=0)
         output_parts.extend(lines)
 
     # Stats

@@ -781,6 +781,10 @@ async def execute_tool(
                 try:
                     project_id = item.get("project_id") or default_project_id
                     tasklist_id = item.get("tasklist_id") or default_tasklist_id
+                    if project_id is not None:
+                        project_id = int(project_id)
+                    if tasklist_id is not None:
+                        tasklist_id = int(tasklist_id)
                     if not project_id or not tasklist_id or not item.get("content"):
                         raise ValueError("project_id, tasklist_id and content are required")
 
