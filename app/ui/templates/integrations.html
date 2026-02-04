@@ -106,8 +106,18 @@
             </div>
 
             <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                {% if not integration.is_configured %}
+                {% if not integration.is_configured and integration.name != 'figma' %}
                 <span class="text-sm text-slate-500">Configure in Admin Settings</span>
+                {% elif not integration.is_configured and integration.name == 'figma' %}
+                {# Figma allows PAT even without OAuth app configured #}
+                <button type="button"
+                        onclick="showFigmaTokenModal()"
+                        class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                    Connect with Token
+                </button>
                 {% elif integration.is_connected %}
                 <div class="flex items-center gap-2">
                     <a href="/admin/audit?provider={{ integration.name }}"
@@ -137,6 +147,25 @@
                     </svg>
                     Connect
                 </button>
+                {% elif integration.name == 'figma' %}
+                <div class="flex items-center gap-3">
+                    <a href="/oauth/{{ integration.name }}/start"
+                       class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                        </svg>
+                        OAuth
+                    </a>
+                    <span class="text-slate-300">|</span>
+                    <button type="button"
+                            onclick="showFigmaTokenModal()"
+                            class="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                        </svg>
+                        Token
+                    </button>
+                </div>
                 {% else %}
                 <a href="/oauth/{{ integration.name }}/start"
                    class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
@@ -214,6 +243,46 @@
                         Confirm
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Figma Token Modal -->
+<div id="figma-token-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-4 sm:p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Connect Figma with Token</h3>
+                <button onclick="hideFigmaTokenModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="bg-primary-50 border border-primary-200 rounded-lg p-3 text-sm text-primary-800">
+                    <p class="font-medium mb-1">How to get a Personal Access Token:</p>
+                    <ol class="list-decimal list-inside space-y-1 text-xs text-primary-700">
+                        <li>Go to <a href="https://www.figma.com/settings" target="_blank" class="underline font-medium hover:text-primary-900">Figma Settings</a></li>
+                        <li>Scroll to <strong>Personal access tokens</strong></li>
+                        <li>Click <strong>Generate new token</strong></li>
+                        <li>Give it a name, select scopes, and copy the token</li>
+                    </ol>
+                    <p class="mt-2 text-xs text-primary-600">PAT works across all teams, no OAuth app needed.</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Personal Access Token</label>
+                    <input type="text" id="figma-pat-input" placeholder="figd_..."
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm">
+                </div>
+
+                <button onclick="figmaTokenConnect()" id="figma-token-btn"
+                        class="w-full px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-medium">
+                    Connect
+                </button>
             </div>
         </div>
     </div>
@@ -440,9 +509,7 @@
         });
     }
 
-    document.getElementById('config-modal').addEventListener('click', function(e) {
-        if (e.target === this) hideConfigModal();
-    });
+    setupModalBackdrop('config-modal', hideConfigModal);
 
     function updateScopeLabel() {
         document.getElementById('config-scope-label').textContent = configBadge;
@@ -799,8 +866,59 @@
         }
     }
 
-    document.getElementById('telegram-modal').addEventListener('click', function(e) {
-        if (e.target === this) hideTelegramModal();
-    });
+    // Modal backdrop close: only close if both mousedown and mouseup happen on the backdrop
+    function setupModalBackdrop(modalId, hideFn) {
+        const modal = document.getElementById(modalId);
+        let mouseDownOnBackdrop = false;
+        modal.addEventListener('mousedown', function(e) {
+            mouseDownOnBackdrop = (e.target === modal);
+        });
+        modal.addEventListener('mouseup', function(e) {
+            if (mouseDownOnBackdrop && e.target === modal) hideFn();
+            mouseDownOnBackdrop = false;
+        });
+    }
+    setupModalBackdrop('telegram-modal', hideTelegramModal);
+
+    // Figma Token
+    function showFigmaTokenModal() {
+        document.getElementById('figma-pat-input').value = '';
+        document.getElementById('figma-token-btn').disabled = false;
+        document.getElementById('figma-token-btn').textContent = 'Connect';
+        document.getElementById('figma-token-modal').classList.remove('hidden');
+    }
+
+    function hideFigmaTokenModal() {
+        document.getElementById('figma-token-modal').classList.add('hidden');
+    }
+
+    setupModalBackdrop('figma-token-modal', hideFigmaTokenModal);
+
+    async function figmaTokenConnect() {
+        const token = document.getElementById('figma-pat-input').value.trim();
+        if (!token) return showToast('Paste your Figma token', 'error');
+
+        const btn = document.getElementById('figma-token-btn');
+        btn.disabled = true;
+        btn.textContent = 'Connecting...';
+
+        try {
+            const response = await fetch('/integrations/figma/token', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({token}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to connect');
+            }
+            showToast('Connected to Figma!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            showToast(error.message, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Connect';
+        }
+    }
 </script>
 {% endblock %}

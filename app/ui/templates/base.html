@@ -48,11 +48,21 @@
         }
         .fade-in { animation: fadeIn 0.3s ease-out; }
 
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
+        @keyframes toastSlideIn {
+            from { transform: translateX(calc(100% + 1rem)); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-        .toast { animation: slideIn 0.3s ease-out; }
+        @keyframes toastFadeOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(calc(100% + 1rem)); opacity: 0; }
+        }
+        .toast {
+            animation: toastSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+            backdrop-filter: blur(8px);
+        }
+        .toast.toast-dismiss {
+            animation: toastFadeOut 0.3s ease-in forwards;
+        }
 
         .card-hover:hover {
             transform: translateY(-2px);
@@ -81,29 +91,46 @@
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const colors = {
-                success: 'bg-emerald-500',
-                error: 'bg-red-500',
-                info: 'bg-primary-500',
-                warning: 'bg-amber-500'
+
+            const styles = {
+                success: 'bg-emerald-600/90 border-emerald-500/50',
+                error: 'bg-red-600/90 border-red-500/50',
+                info: 'bg-indigo-600/90 border-indigo-500/50',
+                warning: 'bg-amber-600/90 border-amber-500/50'
             };
-            toast.className = `toast ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 max-w-sm`;
+            const durations = { success: 5000, error: 20000, info: 8000, warning: 8000 };
+
+            toast.className = `toast ${styles[type]} text-white px-4 py-3 rounded-lg shadow-xl border flex items-center gap-3 max-w-sm`;
 
             const icons = {
                 success: '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
-                error: '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
+                error: '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
                 info: '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
                 warning: '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
             };
 
-            toast.innerHTML = `${icons[type]}<span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                toast.style.transition = 'all 0.3s ease-out';
+            function dismissToast() {
+                toast.classList.add('toast-dismiss');
                 setTimeout(() => toast.remove(), 300);
-            }, 5000);
+            }
+
+            toast.innerHTML = `
+                ${icons[type]}
+                <span class="flex-1 text-sm">${message}</span>
+                <button onclick="this.closest('.toast').classList.add('toast-dismiss'); setTimeout(() => this.closest('.toast')?.remove(), 300)"
+                        class="flex-shrink-0 p-0.5 rounded hover:bg-white/20 transition-colors" aria-label="Close">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            const timeout = durations[type] || 8000;
+            setTimeout(() => {
+                if (toast.parentNode) dismissToast();
+            }, timeout);
         }
 
         // Check URL params for messages

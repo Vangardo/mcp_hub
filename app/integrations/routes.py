@@ -69,6 +69,13 @@ class IntegrationStatus(BaseModel):
     }
 
 
+class FigmaTokenRequest(BaseModel):
+    token: str
+    model_config = {
+        "json_schema_extra": {"examples": [{"token": "figd_..."}]}
+    }
+
+
 class TelegramStartRequest(BaseModel):
     phone: str
     model_config = {
@@ -250,15 +257,14 @@ async def oauth_start(
 ):
     integration = integration_registry.get(provider)
     if not integration:
-        raise HTTPException(status_code=404, detail="Integration not found")
+        return RedirectResponse(url=f"/?error=not_found&message=Integration+not+found")
 
     if getattr(integration, "auth_type", "oauth2") != "oauth2":
-        raise HTTPException(status_code=400, detail="Integration does not use OAuth")
+        return RedirectResponse(url=f"/?error=unsupported&message=Integration+does+not+use+OAuth")
 
     if not integration.is_configured():
-        raise HTTPException(
-            status_code=400,
-            detail=f"{integration.display_name} is not configured"
+        return RedirectResponse(
+            url=f"/?error=not_configured&message={integration.display_name}+is+not+configured.+Ask+admin+to+set+up+credentials."
         )
 
     state = secrets.token_urlsafe(32)
@@ -336,6 +342,94 @@ async def oauth_callback(
         return RedirectResponse(
             url=f"/?error=oauth_failed&provider={provider}&message={str(e)}"
         )
+
+
+@router.post(
+    "/figma/token",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "connected": {
+                            "summary": "Connected via PAT",
+                            "value": {
+                                "success": True,
+                                "meta": {"user_id": "123", "handle": "designer", "email": "user@example.com"},
+                            },
+                        }
+                    }
+                }
+            }
+        }
+    },
+)
+async def figma_token_connect(
+    data: FigmaTokenRequest,
+    current_user: User = Depends(get_current_user),
+):
+    import httpx
+
+    token = data.token.strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Token is required")
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                "https://api.figma.com/v1/me",
+                headers={"X-Figma-Token": token},
+            )
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to connect to Figma API: {e}")
+
+    if resp.status_code == 403:
+        raise HTTPException(
+            status_code=400,
+            detail="Access denied. Token may have insufficient scopes or be expired.",
+        )
+    if resp.status_code != 200:
+        body = resp.text[:200]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Figma API error (HTTP {resp.status_code}): {body}",
+        )
+
+    try:
+        me = resp.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid response from Figma API")
+
+    meta = {
+        "user_id": me.get("id"),
+        "handle": me.get("handle"),
+        "email": me.get("email"),
+        "img_url": me.get("img_url"),
+    }
+
+    with get_db() as conn:
+        save_connection(
+            conn=conn,
+            user_id=current_user.id,
+            provider="figma",
+            auth_type="pat",
+            secret=token,
+            refresh_secret=None,
+            expires_at=None,
+            scope=None,
+            meta=meta,
+        )
+
+    safe_audit_log(
+        user_id=current_user.id,
+        provider="figma",
+        action="figma.connect",
+        request_data={"auth_type": "pat"},
+        response_data=meta,
+        status="ok",
+    )
+
+    return {"success": True, "meta": meta}
 
 
 @router.post(
