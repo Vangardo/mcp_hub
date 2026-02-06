@@ -122,7 +122,6 @@ class TeamworkClient:
 
     async def create_task(
         self,
-        project_id: int,
         tasklist_id: int,
         content: str,
         description: Optional[str] = None,
@@ -131,7 +130,13 @@ class TeamworkClient:
         priority: Optional[str] = None,
         tags: Optional[list[int]] = None,
         estimated_minutes: Optional[int] = None,
+        project_id: Optional[int] = None,  # Not used in API, kept for compatibility
     ) -> dict:
+        """Create a task in a task list.
+
+        Note: project_id is not used - tasks are created via tasklist_id.
+        The parameter is kept for backwards compatibility.
+        """
         task_data: dict[str, Any] = {"content": content}
 
         if description:
@@ -204,6 +209,138 @@ class TeamworkClient:
         return await self._request(
             "GET", f"/projects/{project_id}/tasklists.json"
         )
+
+    async def get_tasklist(self, tasklist_id: int) -> dict:
+        """Get a single task list by ID."""
+        return await self._request("GET", f"/tasklists/{tasklist_id}.json")
+
+    async def create_tasklist(
+        self,
+        project_id: int,
+        name: str,
+        description: Optional[str] = None,
+        milestone_id: Optional[int] = None,
+        private: bool = False,
+        pinned: bool = False,
+        add_to_top: bool = False,
+    ) -> dict:
+        """Create a new task list in a project.
+
+        Args:
+            project_id: Project to create the list in
+            name: Task list name
+            description: Optional description
+            milestone_id: Optional milestone to link
+            private: Make the list private
+            pinned: Pin the list
+            add_to_top: Add at top of lists (default: bottom)
+        """
+        tasklist_data: dict[str, Any] = {"name": name}
+
+        if description:
+            tasklist_data["description"] = description
+        if milestone_id:
+            tasklist_data["milestone-id"] = str(milestone_id)
+        if private:
+            tasklist_data["private"] = "1"
+        if pinned:
+            tasklist_data["pinned"] = "1"
+
+        params = {}
+        if add_to_top:
+            params["addToTop"] = "true"
+
+        return await self._request(
+            "POST",
+            f"/projects/{project_id}/tasklists.json",
+            params=params if params else None,
+            json_data={"todo-list": tasklist_data},
+        )
+
+    async def update_tasklist(
+        self,
+        tasklist_id: int,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        milestone_id: Optional[int] = None,
+        private: Optional[bool] = None,
+        pinned: Optional[bool] = None,
+    ) -> dict:
+        """Update an existing task list.
+
+        Args:
+            tasklist_id: Task list ID to update
+            name: New name
+            description: New description
+            milestone_id: New milestone (0 to unlink)
+            private: Make private/public
+            pinned: Pin/unpin
+        """
+        tasklist_data: dict[str, Any] = {}
+
+        if name is not None:
+            tasklist_data["name"] = name
+        if description is not None:
+            tasklist_data["description"] = description
+        if milestone_id is not None:
+            tasklist_data["milestone-id"] = str(milestone_id)
+        if private is not None:
+            tasklist_data["private"] = "1" if private else "0"
+        if pinned is not None:
+            tasklist_data["pinned"] = "1" if pinned else "0"
+
+        if not tasklist_data:
+            return {"STATUS": "OK", "message": "No changes provided"}
+
+        return await self._request(
+            "PUT",
+            f"/tasklists/{tasklist_id}.json",
+            json_data={"todo-list": tasklist_data},
+        )
+
+    async def delete_tasklist(self, tasklist_id: int) -> dict:
+        """Delete a task list."""
+        return await self._request("DELETE", f"/tasklists/{tasklist_id}.json")
+
+    async def copy_tasklist(
+        self,
+        tasklist_id: int,
+        target_project_id: int,
+        copy_tasks: bool = True,
+    ) -> dict:
+        """Copy a task list to another project.
+
+        Args:
+            tasklist_id: Source task list ID
+            target_project_id: Target project ID
+            copy_tasks: Whether to copy tasks (default: True)
+        """
+        return await self._request(
+            "PUT",
+            f"/tasklists/{tasklist_id}/copy.json",
+            json_data={
+                "projectId": str(target_project_id),
+                "copyTasks": "1" if copy_tasks else "0",
+            },
+        )
+
+    async def move_tasklist(
+        self,
+        tasklist_id: int,
+        target_project_id: int,
+    ) -> dict:
+        """Move a task list to another project.
+
+        Args:
+            tasklist_id: Task list ID to move
+            target_project_id: Target project ID
+        """
+        return await self._request(
+            "PUT",
+            f"/tasklists/{tasklist_id}/move.json",
+            json_data={"projectId": str(target_project_id)},
+        )
+
 
     async def list_tags(self, project_id: Optional[int] = None) -> dict:
         """List all tags, optionally filtered by project"""
@@ -575,3 +712,145 @@ class TeamworkClient:
     async def move_task_to_column(self, task_id: int, column_id: int) -> dict:
         """Alias - columns это stages в workflows"""
         return await self.move_task_to_stage(task_id, column_id)
+
+    # === DEPENDENCIES / PREDECESSORS ===
+    # Teamwork uses "predecessors" - tasks that must complete BEFORE this task can start
+    # and "dependencies" - tasks that depend ON this task (cannot start until this completes)
+
+    async def get_task_predecessors(self, task_id: int) -> dict:
+        """Get tasks that must complete before this task can start."""
+        return await self._request("GET", f"/tasks/{task_id}/predecessors.json")
+
+    async def get_task_dependencies(self, task_id: int) -> dict:
+        """Get tasks that depend on this task (blocked by this task)."""
+        return await self._request("GET", f"/tasks/{task_id}/dependencies.json")
+
+    async def get_task_with_dependencies(self, task_id: int) -> dict:
+        """Get task details including predecessors and dependencies via V3 API."""
+        return await self._request(
+            "GET",
+            f"/projects/api/v3/tasks/{task_id}.json",
+            params={"includeRelatedTasks": "true"},
+        )
+
+    async def set_task_predecessors(
+        self,
+        task_id: int,
+        predecessor_ids: list[int],
+        predecessor_type: str = "start",
+    ) -> dict:
+        """Set predecessors for a task. Replaces all existing predecessors.
+
+        Args:
+            task_id: Task ID to update
+            predecessor_ids: List of task IDs that must complete before this task
+            predecessor_type: "start" or "complete"
+        """
+        # V1 PUT endpoint - requires predecessors as array of {id, type} objects
+        # V3 predecessorIds doesn't work reliably for setting dependencies
+        predecessors = [
+            {"id": pid, "type": predecessor_type}
+            for pid in predecessor_ids
+        ]
+
+        result = await self._request(
+            "PUT",
+            f"/tasks/{task_id}.json",
+            json_data={
+                "todo-item": {
+                    "predecessors": predecessors,
+                },
+            },
+        )
+
+        # Verify dependencies were actually saved
+        verify = await self.get_task_with_dependencies(task_id)
+        task = verify.get("task", {})
+        saved_ids = task.get("predecessorIds") or []
+
+        # Check if all requested predecessors are now set
+        missing = set(predecessor_ids) - set(saved_ids)
+        if missing and predecessor_ids:
+            # Dependencies didn't save - include warning in response
+            result["_warning"] = f"Dependencies may not have saved. Expected: {predecessor_ids}, Got: {saved_ids}"
+            result["_saved_predecessors"] = saved_ids
+
+        return result
+
+    async def add_predecessor(
+        self,
+        task_id: int,
+        predecessor_id: int,
+        predecessor_type: str = "start",
+    ) -> dict:
+        """Add a single predecessor to a task.
+
+        Args:
+            task_id: Task to add predecessor to
+            predecessor_id: Task that must complete first
+            predecessor_type: "start" or "complete" (note: Teamwork may not support type via API)
+        """
+        # First get existing predecessors
+        task_data = await self.get_task_with_dependencies(task_id)
+
+        # Extract existing predecessor IDs (handle None case)
+        task = task_data.get("task", {})
+        existing_ids = task.get("predecessorIds") or []
+
+        # Build new list with existing + new (avoid duplicates)
+        new_ids = list(existing_ids)
+        if predecessor_id not in new_ids:
+            new_ids.append(predecessor_id)
+
+        return await self.set_task_predecessors(task_id, new_ids)
+
+    async def remove_predecessor(self, task_id: int, predecessor_id: int) -> dict:
+        """Remove a predecessor from a task."""
+        # Get existing predecessors
+        task_data = await self.get_task_with_dependencies(task_id)
+        task = task_data.get("task", {})
+        existing_ids = task.get("predecessorIds") or []
+
+        # Filter out the one to remove
+        remaining = [pid for pid in existing_ids if pid != predecessor_id]
+
+        return await self.set_task_predecessors(task_id, remaining)
+
+    async def clear_predecessors(self, task_id: int) -> dict:
+        """Remove all predecessors from a task."""
+        return await self.set_task_predecessors(task_id, [])
+
+    async def list_tasks_v3(
+        self,
+        project_id: Optional[int] = None,
+        assignee_ids: Optional[list[int]] = None,
+        include_blocked: Optional[bool] = None,
+        include_related_tasks: bool = False,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> dict:
+        """List tasks using V3 API with dependency info.
+
+        Args:
+            project_id: Filter by project
+            assignee_ids: Filter by assignees
+            include_blocked: True=only blocked, False=only unblocked, None=all
+            include_related_tasks: Include predecessorIds, dependencyIds
+            page: Page number
+            page_size: Items per page
+        """
+        params: dict[str, Any] = {
+            "page": page,
+            "pageSize": page_size,
+        }
+
+        if project_id:
+            params["projectIds"] = str(project_id)
+        if assignee_ids:
+            params["assignedToUserIds"] = ",".join(str(uid) for uid in assignee_ids)
+        if include_blocked is not None:
+            params["includeBlocked"] = "true" if include_blocked else "false"
+        if include_related_tasks:
+            params["includeRelatedTasks"] = "true"
+
+        return await self._request("GET", "/projects/api/v3/tasks.json", params=params)
