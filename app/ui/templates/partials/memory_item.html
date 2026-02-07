@@ -1,0 +1,83 @@
+<div id="item-{{ item.id }}" class="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center flex-wrap gap-2 mb-1">
+                <h3 class="text-sm font-semibold text-slate-900 truncate">{{ item.title }}</h3>
+                <!-- Type badge -->
+                {% set type_colors = {
+                    'preference': 'bg-indigo-100 text-indigo-700',
+                    'constraint': 'bg-red-100 text-red-700',
+                    'decision': 'bg-purple-100 text-purple-700',
+                    'goal': 'bg-emerald-100 text-emerald-700',
+                    'project': 'bg-blue-100 text-blue-700',
+                    'contact': 'bg-cyan-100 text-cyan-700',
+                    'asset': 'bg-amber-100 text-amber-700',
+                    'note': 'bg-slate-100 text-slate-600'
+                } %}
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full {{ type_colors.get(item.type, 'bg-slate-100 text-slate-600') }}">{{ item.type }}</span>
+                {% if item.scope != 'global' %}
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-500">{{ item.scope }}</span>
+                {% endif %}
+                {% if item.pinned %}
+                <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                {% endif %}
+                {% if item.sensitivity == 'high' %}
+                <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-red-50 text-red-600">sensitive</span>
+                {% endif %}
+            </div>
+
+            <!-- Value preview -->
+            {% set val = item.value_display|default(item.value_json|default(''), true) %}
+            {% if val and val != '{}' and val != 'null' and val != '""' %}
+            <p class="text-sm text-slate-500 mt-1 line-clamp-2 font-mono text-xs">{{ val|truncate(200) }}</p>
+            {% endif %}
+
+            <!-- Tags -->
+            {% if item.tags %}
+            <div class="flex flex-wrap gap-1 mt-2">
+                {% for tag in item.tags %}
+                <span class="px-1.5 py-0.5 text-xs bg-slate-50 text-slate-500 rounded border border-slate-100">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Meta line -->
+            <div class="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                {% if item.ttl_days is not none %}
+                <span title="Expires in {{ item.ttl_days }} days from creation">TTL: {{ item.ttl_days }}d</span>
+                {% else %}
+                <span>Permanent</span>
+                {% endif %}
+                <span>v{{ item.version }}</span>
+                {% if item.updated_at %}
+                <span>{{ item.updated_at[:16] }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center space-x-1 ml-3 flex-shrink-0">
+            <button onclick='togglePin("{{ item.id }}", {{ "true" if item.pinned else "false" }})'
+                    title="{{ 'Unpin' if item.pinned else 'Pin' }}"
+                    class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors {{ 'text-amber-500' if item.pinned else 'text-slate-400 hover:text-amber-500' }}">
+                <svg class="w-4 h-4" fill="{{ 'currentColor' if item.pinned else 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+            </button>
+            <button onclick='showEditModal({{ item | tojson }})'
+                    title="Edit"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-slate-100 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </button>
+            <button onclick='confirmDelete("{{ item.id }}")'
+                    title="Delete"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
