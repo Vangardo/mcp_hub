@@ -43,6 +43,10 @@ def parse_tool_name(tool_name: str) -> tuple[str, str]:
 async def get_access_token_for_provider(
     user_id: int, provider: str
 ) -> tuple[str, Optional[dict]]:
+    # Memory is a built-in provider — no real token, pass user_id
+    if provider == "memory":
+        return str(user_id), None
+
     with get_db() as conn:
         connection = get_user_connection(conn, user_id, provider)
 

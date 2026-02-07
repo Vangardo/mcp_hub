@@ -36,6 +36,7 @@ def register_integrations():
     from app.integrations.figma import FigmaIntegration
     from app.integrations.telegram import TelegramIntegration
     from app.integrations.binance import BinanceIntegration
+    from app.integrations.memory import MemoryIntegration
 
     integration_registry.register(TeamworkIntegration())
     integration_registry.register(SlackIntegration())
@@ -43,3 +44,4 @@ def register_integrations():
     integration_registry.register(FigmaIntegration())
     integration_registry.register(TelegramIntegration())
     integration_registry.register(BinanceIntegration())
+    integration_registry.register(MemoryIntegration())

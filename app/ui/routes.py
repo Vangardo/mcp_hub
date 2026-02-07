@@ -53,7 +53,7 @@ async def home(request: Request, user: Optional[User] = Depends(get_current_user
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    integrations = integration_registry.list_all()
+    integrations = [i for i in integration_registry.list_all() if i.name != "memory"]
 
     with get_db() as conn:
         connections = get_user_connections(conn, user.id)
@@ -411,6 +411,121 @@ async def admin_settings_page(
             "base_url": base_url,
         },
     )
+
+
+@router.get("/memory", response_class=HTMLResponse)
+async def memory_page(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    q: Optional[str] = Query(None),
+):
+    from app.integrations.memory import store as memory_store
+
+    with get_db() as conn:
+        total = memory_store.count_items(conn, current_user.id)
+
+        if q and q.strip():
+            items = memory_store.search_items(conn, current_user.id, q.strip(), top_k=100)
+        else:
+            items = memory_store.list_items(conn, current_user.id, limit=200)
+
+        context_pack = memory_store.get_context_pack(conn, current_user.id)
+
+    return templates.TemplateResponse(
+        request,
+        "memory.html",
+        {
+            "user": {"email": current_user.email, "role": current_user.role.value},
+            "active_page": "memory",
+            "items": items,
+            "total": total,
+            "context_pack": context_pack,
+            "search_query": q or "",
+        },
+    )
+
+
+@router.post("/memory/upsert")
+async def memory_upsert(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    from app.integrations.memory import store as memory_store
+    from app.integrations.memory.evaluate import evaluate_write
+
+    form = await request.form()
+    item_data = {
+        "title": form.get("title", ""),
+        "type": form.get("type", "note"),
+        "scope": form.get("scope", "global"),
+        "value_json": form.get("value_json", "{}"),
+        "tags_json": [t.strip() for t in form.get("tags", "").split(",") if t.strip()],
+        "pinned": form.get("pinned") == "on",
+        "sensitivity": form.get("sensitivity", "low"),
+        "explicit": True,
+    }
+
+    ttl_value = form.get("ttl_days", "")
+    if ttl_value and ttl_value != "null":
+        item_data["ttl_days"] = int(ttl_value)
+
+    eval_result = evaluate_write(item_data)
+    if eval_result["allow"]:
+        item_data["ttl_days"] = eval_result.get("ttl_days", item_data.get("ttl_days"))
+        item_data["sensitivity"] = eval_result.get("sensitivity", item_data.get("sensitivity"))
+
+    with get_db() as conn:
+        memory_store.upsert_item(conn, current_user.id, item_data)
+
+    return RedirectResponse(url="/memory", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/memory/{item_id}/delete")
+async def memory_delete(
+    item_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    from app.integrations.memory import store as memory_store
+
+    with get_db() as conn:
+        memory_store.delete_item(conn, current_user.id, item_id)
+
+    return RedirectResponse(url="/memory", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/memory/{item_id}/pin")
+async def memory_pin(
+    item_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    from app.integrations.memory import store as memory_store
+
+    form = await request.form()
+    pinned = form.get("pinned") == "true"
+
+    with get_db() as conn:
+        memory_store.pin_item(conn, current_user.id, item_id, pinned)
+
+    return RedirectResponse(url="/memory", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/memory/{item_id}/ttl")
+async def memory_set_ttl(
+    item_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    from app.integrations.memory import store as memory_store
+
+    form = await request.form()
+    ttl_value = form.get("ttl_days")
+    ttl_days = int(ttl_value) if ttl_value and ttl_value != "null" else None
+
+    with get_db() as conn:
+        memory_store.set_ttl(conn, current_user.id, item_id, ttl_days)
+
+    return RedirectResponse(url="/memory", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/account", response_class=HTMLResponse)

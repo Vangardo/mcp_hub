@@ -221,6 +221,7 @@ async def handle_call_tool(
 
     if tool_name == "hub.integrations.list":
         connected_providers = set(get_user_connected_providers(user["id"]))
+        connected_providers.add("memory")
         include_tools = False
         connected_only = True
         if arguments:
@@ -277,6 +278,7 @@ async def handle_call_tool(
             raise ValueError(f"Provider not allowed for provider filter: {provider_filter}")
 
         connected_providers = set(get_user_connected_providers(user["id"]))
+        connected_providers.add("memory")
         integration = integration_registry.get(provider)
         if not integration:
             raise ValueError(f"Unknown provider: {provider}")
@@ -322,6 +324,7 @@ async def handle_call_tool(
             raise ValueError(f"Provider not allowed for provider filter: {provider_filter}")
 
         connected_providers = set(get_user_connected_providers(user["id"]))
+        connected_providers.add("memory")
         integration = integration_registry.get(provider)
         if not integration:
             raise ValueError(f"Unknown provider: {provider}")
