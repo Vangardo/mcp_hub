@@ -56,6 +56,12 @@
                                 <path d="M9.04 15.176l-.375 5.267c.536 0 .768-.231 1.047-.508l2.52-2.39 5.224 3.82c.959.529 1.64.25 1.902-.887L23.91 3.31c.3-1.308-.473-1.82-1.33-1.5L1.3 10.02c-1.277.496-1.258 1.21-.22 1.531l5.494 1.714L19.2 5.9c.595-.395 1.136-.177.69.218z"/>
                             </svg>
                         </div>
+                        {% elif integration.name == 'binance' %}
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2L6.5 7.5 8.62 9.62 12 6.24l3.38 3.38L17.5 7.5 12 2zM2 12l2.12-2.12L6.24 12l-2.12 2.12L2 12zm10 0l2.12-2.12L16.24 12l-2.12 2.12L12 12zm-5.76 0L4.12 14.12 2 12l2.12-2.12L6.24 12zm11.52 0l2.12-2.12L22 12l-2.12 2.12-2.12-2.12zM12 17.76l-3.38-3.38L6.5 16.5 12 22l5.5-5.5-2.12-2.12L12 17.76z"/>
+                            </svg>
+                        </div>
                         {% else %}
                         <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-500/25">
                             <span class="text-2xl font-bold text-white">{{ integration.name[0]|upper }}</span>
@@ -91,6 +97,8 @@
                         Company: <span class="font-medium text-slate-700">{{ integration.meta.company_name }}</span>
                         {% elif integration.meta.handle %}
                         User: <span class="font-medium text-slate-700">{{ integration.meta.handle }}</span>
+                        {% elif integration.meta.top_assets %}
+                        Assets: <span class="font-medium text-slate-700">{{ integration.meta.top_assets }}</span>
                         {% endif %}
                     </p>
                     {% endif %}
@@ -106,7 +114,7 @@
             </div>
 
             <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                {% if not integration.is_configured and integration.name != 'figma' %}
+                {% if not integration.is_configured and integration.name not in ('figma', 'binance') %}
                 <span class="text-sm text-slate-500">Configure in Admin Settings</span>
                 {% elif not integration.is_configured and integration.name == 'figma' %}
                 {# Figma allows PAT even without OAuth app configured #}
@@ -117,6 +125,16 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                     </svg>
                     Connect with Token
+                </button>
+                {% elif not integration.is_configured and integration.name == 'binance' %}
+                {# Binance uses API keys, no admin config needed #}
+                <button type="button"
+                        onclick="showBinanceTokenModal()"
+                        class="inline-flex items-center text-sm font-medium text-amber-600 hover:text-amber-800 transition-colors">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                    Connect with API Key
                 </button>
                 {% elif integration.is_connected %}
                 <div class="flex items-center gap-2">
@@ -166,6 +184,15 @@
                         Token
                     </button>
                 </div>
+                {% elif integration.name == 'binance' %}
+                <button type="button"
+                        onclick="showBinanceTokenModal()"
+                        class="inline-flex items-center text-sm font-medium text-amber-600 hover:text-amber-800 transition-colors">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                    Connect with API Key
+                </button>
                 {% else %}
                 <a href="/oauth/{{ integration.name }}/start"
                    class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
@@ -281,6 +308,56 @@
 
                 <button onclick="figmaTokenConnect()" id="figma-token-btn"
                         class="w-full px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-medium">
+                    Connect
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Binance Token Modal -->
+<div id="binance-token-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-4 sm:p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-yellow-500 to-amber-600 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Connect Binance</h3>
+                <button onclick="hideBinanceTokenModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                    <p class="font-medium mb-1">How to get an API Key:</p>
+                    <ol class="list-decimal list-inside space-y-1 text-xs text-amber-700">
+                        <li>Go to <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" class="underline font-medium hover:text-amber-900">Binance API Management</a></li>
+                        <li>Click <strong>Create API</strong> and choose <strong>System generated</strong></li>
+                        <li>Complete security verification</li>
+                        <li>Enable permissions: <strong>Enable Reading</strong> + <strong>Enable Spot & Margin Trading</strong></li>
+                        <li>Set <strong>IP restrictions</strong> for security (recommended)</li>
+                        <li>Copy the <strong>API Key</strong> and <strong>Secret Key</strong></li>
+                    </ol>
+                    <p class="mt-2 text-xs text-amber-600">Secret Key is shown only once. Save it safely.</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
+                    <input type="text" id="binance-api-key-input" placeholder="Your API Key..."
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Secret Key</label>
+                    <input type="password" id="binance-api-secret-input" placeholder="Your Secret Key..."
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-sm">
+                </div>
+
+                <div id="binance-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 break-words"></div>
+
+                <button onclick="binanceTokenConnect()" id="binance-token-btn"
+                        class="w-full px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-lg hover:from-yellow-600 hover:to-amber-700 transition-all font-medium">
                     Connect
                 </button>
             </div>
@@ -915,6 +992,61 @@
             showToast('Connected to Figma!', 'success');
             setTimeout(() => window.location.reload(), 1000);
         } catch (error) {
+            showToast(error.message, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Connect';
+        }
+    }
+
+    // Binance Token
+    function showBinanceTokenModal() {
+        document.getElementById('binance-api-key-input').value = '';
+        document.getElementById('binance-api-secret-input').value = '';
+        document.getElementById('binance-token-btn').disabled = false;
+        document.getElementById('binance-token-btn').textContent = 'Connect';
+        const errEl = document.getElementById('binance-error');
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
+        document.getElementById('binance-token-modal').classList.remove('hidden');
+    }
+
+    function hideBinanceTokenModal() {
+        document.getElementById('binance-token-modal').classList.add('hidden');
+    }
+
+    setupModalBackdrop('binance-token-modal', hideBinanceTokenModal);
+
+    async function binanceTokenConnect() {
+        const apiKey = document.getElementById('binance-api-key-input').value.trim();
+        const apiSecret = document.getElementById('binance-api-secret-input').value.trim();
+        const errEl = document.getElementById('binance-error');
+        errEl.classList.add('hidden');
+
+        if (!apiKey || !apiSecret) {
+            errEl.textContent = 'Enter both API Key and Secret Key';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        const btn = document.getElementById('binance-token-btn');
+        btn.disabled = true;
+        btn.textContent = 'Connecting...';
+
+        try {
+            const response = await fetch('/integrations/binance/token', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({api_key: apiKey, api_secret: apiSecret}),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to connect');
+            }
+            showToast('Connected to Binance!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            errEl.textContent = error.message;
+            errEl.classList.remove('hidden');
             showToast(error.message, 'error');
             btn.disabled = false;
             btn.textContent = 'Connect';

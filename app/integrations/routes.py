@@ -76,6 +76,16 @@ class FigmaTokenRequest(BaseModel):
     }
 
 
+class BinanceTokenRequest(BaseModel):
+    api_key: str
+    api_secret: str
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"api_key": "your_api_key", "api_secret": "your_api_secret"}]
+        }
+    }
+
+
 class TelegramStartRequest(BaseModel):
     phone: str
     model_config = {
@@ -425,6 +435,155 @@ async def figma_token_connect(
         provider="figma",
         action="figma.connect",
         request_data={"auth_type": "pat"},
+        response_data=meta,
+        status="ok",
+    )
+
+    return {"success": True, "meta": meta}
+
+
+@router.post(
+    "/binance/token",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "connected": {
+                            "summary": "Connected via API Key",
+                            "value": {
+                                "success": True,
+                                "meta": {"permissions": ["SPOT"]},
+                            },
+                        }
+                    }
+                }
+            }
+        }
+    },
+)
+async def binance_token_connect(
+    data: BinanceTokenRequest,
+    current_user: User = Depends(get_current_user),
+):
+    import httpx
+    import hmac
+    import hashlib
+    import time
+    from urllib.parse import urlencode
+
+    import logging
+    logger = logging.getLogger(__name__)
+
+    api_key = data.api_key.strip()
+    api_secret = data.api_secret.strip()
+    if not api_key or not api_secret:
+        raise HTTPException(status_code=400, detail="API Key and Secret are required")
+
+    # Validate credentials by calling /api/v3/account
+    timestamp = int(time.time() * 1000)
+    params = {"timestamp": timestamp}
+    query_string = urlencode(params)
+    signature = hmac.new(
+        api_secret.encode("utf-8"),
+        query_string.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    params["signature"] = signature
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                "https://api.binance.com/api/v3/account",
+                headers={"X-MBX-APIKEY": api_key},
+                params=params,
+            )
+    except httpx.ConnectError as e:
+        logger.error("Binance connect error: %s", e)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot reach Binance API. Check your network or try api1.binance.com. Error: {e}",
+        )
+    except httpx.TimeoutException as e:
+        logger.error("Binance timeout: %s", e)
+        raise HTTPException(status_code=400, detail=f"Binance API request timed out: {e}")
+    except httpx.HTTPError as e:
+        logger.error("Binance HTTP error: %s", e)
+        raise HTTPException(status_code=400, detail=f"Failed to connect to Binance API: {e}")
+
+    body_text = resp.text[:500]
+    logger.info("Binance /account response: status=%d body=%s", resp.status_code, body_text)
+
+    # Parse Binance error response for detailed message
+    binance_msg = ""
+    try:
+        err_json = resp.json()
+        binance_msg = err_json.get("msg", "")
+        binance_code = err_json.get("code", "")
+        if binance_code:
+            binance_msg = f"[{binance_code}] {binance_msg}"
+    except Exception:
+        binance_msg = body_text
+
+    if resp.status_code == 401:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid API Key. Binance: {binance_msg}",
+        )
+    if resp.status_code == 403:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Access denied. Check API Key permissions or IP restrictions. Binance: {binance_msg}",
+        )
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Binance API error (HTTP {resp.status_code}): {binance_msg}",
+        )
+
+    try:
+        account = resp.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid response from Binance API")
+
+    # Extract permissions and balance summary
+    permissions = account.get("permissions", [])
+    balances = account.get("balances", [])
+    non_zero = [
+        b for b in balances
+        if float(b.get("free", 0)) > 0 or float(b.get("locked", 0)) > 0
+    ]
+    asset_summary = ", ".join(b["asset"] for b in non_zero[:5])
+    if len(non_zero) > 5:
+        asset_summary += f" +{len(non_zero) - 5} more"
+
+    meta = {
+        "permissions": permissions,
+        "asset_count": len(non_zero),
+        "top_assets": asset_summary,
+    }
+
+    # Store as JSON: {"api_key": "...", "api_secret": "..."}
+    token_json = json.dumps({"api_key": api_key, "api_secret": api_secret})
+
+    with get_db() as conn:
+        save_connection(
+            conn=conn,
+            user_id=current_user.id,
+            provider="binance",
+            auth_type="pat",
+            secret=token_json,
+            refresh_secret=None,
+            expires_at=None,
+            scope=None,
+            meta=meta,
+        )
+
+    safe_audit_log(
+        user_id=current_user.id,
+        provider="binance",
+        action="binance.connect",
+        request_data={"auth_type": "api_key"},
         response_data=meta,
         status="ok",
     )
