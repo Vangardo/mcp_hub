@@ -14,7 +14,15 @@ from app.integrations.registry import integration_registry
 from app.mcp_gateway.routing import execute_tool, parse_tool_name
 from app.mcp_gateway.audit import log_tool_call
 from app.integrations.connections import list_connected_providers
-from app.integrations.registry import integration_registry
+from app.integrations.user_integrations import get_user_enabled_providers
+from app.integrations.custom_servers import (
+    get_user_custom_servers,
+    get_custom_server,
+    decrypt_server_auth_secret,
+    update_tools_cache,
+    update_health_status,
+)
+from app.integrations.mcp_proxy import MCPProxyClient
 
 
 mcp_router = APIRouter(tags=["mcp"])
@@ -220,16 +228,24 @@ async def handle_call_tool(
     tool_name = unformat_tool_name(tool_name, name_format)
 
     if tool_name == "hub.integrations.list":
-        connected_providers = set(get_user_connected_providers(user["id"]))
-        connected_providers.add("memory")
         include_tools = False
         connected_only = True
         if arguments:
             include_tools = arguments.get("include_tools", False)
             connected_only = arguments.get("connected_only", True)
 
+        with get_db() as conn:
+            enabled_providers = get_user_enabled_providers(conn, user["id"])
+            custom_servers = get_user_custom_servers(conn, user["id"])
+
+        connected_providers = set(get_user_connected_providers(user["id"]))
+        if "memory" in enabled_providers:
+            connected_providers.add("memory")
+
         integrations = []
         for integration in integration_registry.list_all():
+            if integration.name not in enabled_providers:
+                continue
             connected = integration.name in connected_providers
             if connected_only and not connected:
                 continue
@@ -249,6 +265,34 @@ async def handle_call_tool(
                         "inputSchema": tool.input_schema,
                     }
                     for tool in integration.get_tools()
+                ]
+            integrations.append(item)
+
+        # Include enabled custom MCP servers
+        for server in custom_servers:
+            if not server["is_enabled"]:
+                continue
+            is_healthy = server["health_status"] == "healthy"
+            if connected_only and not is_healthy:
+                continue
+            item = {
+                "name": server["slug"],
+                "display_name": server["display_name"],
+                "description": f"Custom MCP: {server['server_url']}",
+                "auth_type": "custom",
+                "is_configured": True,
+                "is_connected": is_healthy,
+                "is_custom": True,
+            }
+            if include_tools and server.get("tools_cache_json"):
+                cached_tools = json.loads(server["tools_cache_json"])
+                item["tools"] = [
+                    {
+                        "name": f"{server['slug']}.{t['name']}",
+                        "description": t.get("description", ""),
+                        "inputSchema": t.get("inputSchema", {}),
+                    }
+                    for t in cached_tools
                 ]
             integrations.append(item)
 
@@ -277,24 +321,49 @@ async def handle_call_tool(
         if provider_filter and provider != provider_filter:
             raise ValueError(f"Provider not allowed for provider filter: {provider_filter}")
 
-        connected_providers = set(get_user_connected_providers(user["id"]))
-        connected_providers.add("memory")
-        integration = integration_registry.get(provider)
-        if not integration:
-            raise ValueError(f"Unknown provider: {provider}")
-        if provider not in connected_providers:
-            raise ValueError(f"Provider not connected: {provider}")
-        if not integration.is_configured():
-            raise ValueError(f"Provider not configured: {provider}")
+        with get_db() as conn:
+            enabled_providers = get_user_enabled_providers(conn, user["id"])
 
-        tools = [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "inputSchema": tool.input_schema,
-            }
-            for tool in integration.get_tools()
-        ]
+        connected_providers = set(get_user_connected_providers(user["id"]))
+        if "memory" in enabled_providers:
+            connected_providers.add("memory")
+
+        # Try system integration first
+        integration = integration_registry.get(provider)
+        if integration:
+            if provider not in enabled_providers:
+                raise ValueError(f"Provider is disabled: {provider}")
+            if provider not in connected_providers:
+                raise ValueError(f"Provider not connected: {provider}")
+            if not integration.is_configured():
+                raise ValueError(f"Provider not configured: {provider}")
+
+            tools = [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "inputSchema": tool.input_schema,
+                }
+                for tool in integration.get_tools()
+            ]
+        else:
+            # Check custom MCP servers
+            with get_db() as conn:
+                custom_server = get_custom_server(conn, user["id"], provider)
+            if not custom_server:
+                raise ValueError(f"Unknown provider: {provider}")
+            if not custom_server["is_enabled"]:
+                raise ValueError(f"Provider is disabled: {provider}")
+
+            cached_tools = json.loads(custom_server["tools_cache_json"]) if custom_server.get("tools_cache_json") else []
+            tools = [
+                {
+                    "name": f"{provider}.{t['name']}",
+                    "description": t.get("description", ""),
+                    "inputSchema": t.get("inputSchema", {}),
+                }
+                for t in cached_tools
+            ]
 
         safe_audit_log(
             user_id=user["id"],
@@ -323,43 +392,96 @@ async def handle_call_tool(
         if provider_filter and provider != provider_filter:
             raise ValueError(f"Provider not allowed for provider filter: {provider_filter}")
 
+        with get_db() as conn:
+            enabled_providers = get_user_enabled_providers(conn, user["id"])
+
         connected_providers = set(get_user_connected_providers(user["id"]))
-        connected_providers.add("memory")
+        if "memory" in enabled_providers:
+            connected_providers.add("memory")
+
+        # Try system integration first
         integration = integration_registry.get(provider)
-        if not integration:
-            raise ValueError(f"Unknown provider: {provider}")
-        if provider not in connected_providers:
-            raise ValueError(f"Provider not connected: {provider}")
-        if not integration.is_configured():
-            raise ValueError(f"Provider not configured: {provider}")
+        if integration:
+            if provider not in enabled_providers:
+                raise ValueError(f"Provider is disabled: {provider}")
+            if provider not in connected_providers:
+                raise ValueError(f"Provider not connected: {provider}")
+            if not integration.is_configured():
+                raise ValueError(f"Provider not configured: {provider}")
 
-        tool_name = raw_tool_name.replace("__", ".")
-        if not tool_name.startswith(f"{provider}."):
-            raise ValueError("tool_name must be prefixed with provider (e.g., teamwork.tasks.list)")
+            tool_name = raw_tool_name.replace("__", ".")
+            if not tool_name.startswith(f"{provider}."):
+                raise ValueError("tool_name must be prefixed with provider (e.g., teamwork.tasks.list)")
 
-        result = await execute_tool(user["id"], tool_name, nested_arguments)
+            result = await execute_tool(user["id"], tool_name, nested_arguments)
 
-        safe_audit_log(
-            user_id=user["id"],
-            provider=provider,
-            action="hub.tools.call",
-            tool_name=tool_name,
-            request_data={"tool_name": tool_name, "arguments": nested_arguments},
-            response_data=result.data if result.success else None,
-            status="ok" if result.success else "error",
-            error_text=result.error if not result.success else None,
-        )
+            safe_audit_log(
+                user_id=user["id"],
+                provider=provider,
+                action="hub.tools.call",
+                tool_name=tool_name,
+                request_data={"tool_name": tool_name, "arguments": nested_arguments},
+                response_data=result.data if result.success else None,
+                status="ok" if result.success else "error",
+                error_text=result.error if not result.success else None,
+            )
 
-        if result.success:
-            return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": json.dumps(result.data, default=str, ensure_ascii=False),
-                    }
-                ],
-            }
-        return {"content": [{"type": "text", "text": f"Error: {result.error}"}]}
+            if result.success:
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps(result.data, default=str, ensure_ascii=False),
+                        }
+                    ],
+                }
+            return {"content": [{"type": "text", "text": f"Error: {result.error}"}]}
+        else:
+            # Custom MCP server proxy
+            with get_db() as conn:
+                custom_server = get_custom_server(conn, user["id"], provider)
+            if not custom_server:
+                raise ValueError(f"Unknown provider: {provider}")
+            if not custom_server["is_enabled"]:
+                raise ValueError(f"Provider is disabled: {provider}")
+
+            remote_tool_name = raw_tool_name.replace("__", ".")
+            if remote_tool_name.startswith(f"{provider}."):
+                remote_tool_name = remote_tool_name[len(provider) + 1:]
+
+            auth_secret = decrypt_server_auth_secret(custom_server)
+            proxy = MCPProxyClient(
+                server_url=custom_server["server_url"],
+                auth_type=custom_server["auth_type"],
+                auth_secret=auth_secret,
+                auth_header_name=custom_server.get("auth_header_name"),
+            )
+
+            try:
+                proxy_result = await proxy.call_tool(remote_tool_name, nested_arguments)
+            except Exception as e:
+                safe_audit_log(
+                    user_id=user["id"],
+                    provider=provider,
+                    action="hub.tools.call",
+                    tool_name=raw_tool_name,
+                    request_data={"tool_name": raw_tool_name, "arguments": nested_arguments},
+                    response_data=None,
+                    status="error",
+                    error_text=str(e),
+                )
+                return {"content": [{"type": "text", "text": f"Error: {e}"}], "isError": True}
+
+            safe_audit_log(
+                user_id=user["id"],
+                provider=provider,
+                action="hub.tools.call",
+                tool_name=raw_tool_name,
+                request_data={"tool_name": raw_tool_name, "arguments": nested_arguments},
+                response_data=proxy_result,
+                status="ok",
+            )
+            return proxy_result
 
     if provider_filter:
         if not tool_name.startswith(f"{provider_filter}."):

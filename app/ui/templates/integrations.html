@@ -3,212 +3,179 @@
 {% block title %}Integrations - MCP Hub{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-8">
+
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Integrations</h1>
-            <p class="mt-1 text-sm text-slate-500">Connect your services to use them with AI assistants</p>
+            <h1 class="text-2xl font-bold text-slate-900">My Integrations</h1>
+            <p class="mt-1 text-sm text-slate-500">Manage your connected services and custom MCP servers</p>
         </div>
-        <button onclick="showConfigModal()"
-                class="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-            </svg>
-            Get MCP Config
-        </button>
+        <div class="flex items-center gap-3">
+            <button onclick="showAddModal()"
+                    class="inline-flex items-center px-4 py-2.5 border-2 border-dashed border-slate-300 text-sm font-medium rounded-xl text-slate-600 hover:border-primary-400 hover:text-primary-700 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Add Integration
+            </button>
+            <button onclick="showConfigModal()"
+                    class="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                </svg>
+                MCP Config
+            </button>
+        </div>
     </div>
 
-    <!-- Integration Cards -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {% for integration in integrations %}
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-hover transition-all duration-200">
-            <div class="p-6">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center space-x-4">
+    <!-- My Integrations Grid -->
+    {% if my_integrations %}
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {% for integration in my_integrations %}
+        <div class="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-200 hover:shadow-md hover:border-slate-300 {% if not integration.is_enabled %}opacity-60{% endif %}">
+            <div class="p-5">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
                         {% if integration.name == 'teamwork' %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                            </svg>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                         </div>
                         {% elif integration.name == 'slack' %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
-                            </svg>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
                         </div>
                         {% elif integration.name == 'miro' %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/25">
-                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M17.392 0H6.608C2.958 0 0 2.958 0 6.608v10.784C0 21.042 2.958 24 6.608 24h10.784C21.042 24 24 21.042 24 17.392V6.608C24 2.958 21.042 0 17.392 0zM20.1 17.9L18.1 7.6l-4 7-4-7-4 7-2-1.3 5.2-9.6h1.6l3.2 5.8 3.2-5.8h1.6l2.2 13.2z"/>
-                            </svg>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.392 0H6.608C2.958 0 0 2.958 0 6.608v10.784C0 21.042 2.958 24 6.608 24h10.784C21.042 24 24 21.042 24 17.392V6.608C24 2.958 21.042 0 17.392 0zM20.1 17.9L18.1 7.6l-4 7-4-7-4 7-2-1.3 5.2-9.6h1.6l3.2 5.8 3.2-5.8h1.6l2.2 13.2z"/></svg>
                         </div>
                         {% elif integration.name == 'figma' %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z"/>
-                            </svg>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z"/></svg>
                         </div>
                         {% elif integration.name == 'telegram' %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
-                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M9.04 15.176l-.375 5.267c.536 0 .768-.231 1.047-.508l2.52-2.39 5.224 3.82c.959.529 1.64.25 1.902-.887L23.91 3.31c.3-1.308-.473-1.82-1.33-1.5L1.3 10.02c-1.277.496-1.258 1.21-.22 1.531l5.494 1.714L19.2 5.9c.595-.395 1.136-.177.69.218z"/>
-                            </svg>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M9.04 15.176l-.375 5.267c.536 0 .768-.231 1.047-.508l2.52-2.39 5.224 3.82c.959.529 1.64.25 1.902-.887L23.91 3.31c.3-1.308-.473-1.82-1.33-1.5L1.3 10.02c-1.277.496-1.258 1.21-.22 1.531l5.494 1.714L19.2 5.9c.595-.395 1.136-.177.69.218z"/></svg>
                         </div>
                         {% elif integration.name == 'binance' %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2L6.5 7.5 8.62 9.62 12 6.24l3.38 3.38L17.5 7.5 12 2zM2 12l2.12-2.12L6.24 12l-2.12 2.12L2 12zm10 0l2.12-2.12L16.24 12l-2.12 2.12L12 12zm-5.76 0L4.12 14.12 2 12l2.12-2.12L6.24 12zm11.52 0l2.12-2.12L22 12l-2.12 2.12-2.12-2.12zM12 17.76l-3.38-3.38L6.5 16.5 12 22l5.5-5.5-2.12-2.12L12 17.76z"/>
-                            </svg>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L6.5 7.5 8.62 9.62 12 6.24l3.38 3.38L17.5 7.5 12 2zM2 12l2.12-2.12L6.24 12l-2.12 2.12L2 12zm10 0l2.12-2.12L16.24 12l-2.12 2.12L12 12zm-5.76 0L4.12 14.12 2 12l2.12-2.12L6.24 12zm11.52 0l2.12-2.12L22 12l-2.12 2.12-2.12-2.12zM12 17.76l-3.38-3.38L6.5 16.5 12 22l5.5-5.5-2.12-2.12L12 17.76z"/></svg>
                         </div>
                         {% else %}
-                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-500/25">
-                            <span class="text-2xl font-bold text-white">{{ integration.name[0]|upper }}</span>
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-500/20">
+                            <span class="text-lg font-bold text-white">{{ integration.name[0]|upper }}</span>
                         </div>
                         {% endif %}
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-900">{{ integration.display_name }}</h3>
-                            <p class="text-sm text-slate-500">{{ integration.description }}</p>
+                        <div class="min-w-0">
+                            <h3 class="text-base font-semibold text-slate-900 truncate">{{ integration.display_name }}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-1">{{ integration.description }}</p>
                         </div>
+                    </div>
+
+                    <!-- Toggle + Remove -->
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <label class="relative inline-flex items-center cursor-pointer" title="{% if integration.is_enabled %}Visible to AI{% else %}Hidden from AI{% endif %}">
+                            <input type="checkbox" class="sr-only peer"
+                                   {% if integration.is_enabled %}checked{% endif %}
+                                   onchange="toggleIntegration('{{ integration.name }}', this.checked)">
+                            <div class="w-9 h-5 bg-slate-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                        </label>
+                        <button onclick="removeIntegration('{{ integration.name }}')" class="p-1 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Remove from dashboard">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="mt-6">
+                <!-- Status -->
+                <div class="mt-3">
                     {% if not integration.is_configured %}
                     <div class="flex items-center space-x-2 text-slate-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span class="text-sm font-medium">Not Configured</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span class="text-xs font-medium">Not Configured</span>
                     </div>
                     {% elif integration.is_connected %}
-                    <div class="flex items-center space-x-2">
-                        <div class="flex items-center space-x-2 text-emerald-600">
-                            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span class="text-sm font-medium">Connected</span>
-                        </div>
+                    <div class="flex items-center space-x-2 text-emerald-600">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-medium">Connected</span>
+                        {% if not integration.is_enabled %}
+                        <span class="text-xs text-amber-500 font-medium ml-1">(hidden from AI)</span>
+                        {% endif %}
                     </div>
                     {% if integration.meta %}
-                    <p class="mt-2 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg">
+                    <p class="mt-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
                         {% if integration.meta.team_name %}
-                        Workspace: <span class="font-medium text-slate-700">{{ integration.meta.team_name }}</span>
+                        <span class="font-medium text-slate-700">{{ integration.meta.team_name }}</span>
                         {% elif integration.meta.company_name %}
-                        Company: <span class="font-medium text-slate-700">{{ integration.meta.company_name }}</span>
+                        <span class="font-medium text-slate-700">{{ integration.meta.company_name }}</span>
                         {% elif integration.meta.handle %}
-                        User: <span class="font-medium text-slate-700">{{ integration.meta.handle }}</span>
+                        <span class="font-medium text-slate-700">{{ integration.meta.handle }}</span>
                         {% elif integration.meta.top_assets %}
-                        Assets: <span class="font-medium text-slate-700">{{ integration.meta.top_assets }}</span>
+                        <span class="font-medium text-slate-700">{{ integration.meta.top_assets }}</span>
                         {% endif %}
                     </p>
                     {% endif %}
                     {% else %}
-                    <div class="flex items-center space-x-2 text-amber-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                        </svg>
-                        <span class="text-sm font-medium">Disconnected</span>
+                    <div class="flex items-center space-x-2 text-slate-400">
+                        <div class="w-2 h-2 bg-slate-300 rounded-full"></div>
+                        <span class="text-xs font-medium">Not connected</span>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <!-- Actions -->
+            <div class="px-5 py-3 bg-slate-50/80 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                 {% if not integration.is_configured and integration.name not in ('figma', 'binance') %}
-                <span class="text-sm text-slate-500">Configure in Admin Settings</span>
+                <span class="text-xs text-slate-400">Admin setup required</span>
                 {% elif not integration.is_configured and integration.name == 'figma' %}
-                {# Figma allows PAT even without OAuth app configured #}
-                <button type="button"
-                        onclick="showFigmaTokenModal()"
-                        class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                    </svg>
+                <button type="button" onclick="showFigmaTokenModal()" class="inline-flex items-center text-xs font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                     Connect with Token
                 </button>
                 {% elif not integration.is_configured and integration.name == 'binance' %}
-                {# Binance uses API keys, no admin config needed #}
-                <button type="button"
-                        onclick="showBinanceTokenModal()"
-                        class="inline-flex items-center text-sm font-medium text-amber-600 hover:text-amber-800 transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                    </svg>
+                <button type="button" onclick="showBinanceTokenModal()" class="inline-flex items-center text-xs font-medium text-amber-600 hover:text-amber-800 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                     Connect with API Key
                 </button>
                 {% elif integration.is_connected %}
-                <div class="flex items-center gap-2">
-                    <a href="/admin/audit?provider={{ integration.name }}"
-                       class="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
+                <div class="flex items-center gap-3">
+                    <a href="/admin/audit?provider={{ integration.name }}" class="inline-flex items-center text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                         Logs
                     </a>
                     <form action="/integrations/{{ integration.name }}/disconnect" method="post" class="inline">
-                        <button type="submit"
-                                class="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800 transition-colors">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
+                        <button type="submit" class="inline-flex items-center text-xs font-medium text-red-500 hover:text-red-700 transition-colors">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             Disconnect
                         </button>
                     </form>
                 </div>
                 {% else %}
                 {% if integration.name == 'telegram' %}
-                <button type="button"
-                        onclick="showTelegramModal()"
-                        class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                    </svg>
+                <button type="button" onclick="showTelegramModal()" class="inline-flex items-center text-xs font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     Connect
                 </button>
                 {% elif integration.name == 'figma' %}
-                <div class="flex items-center gap-3">
-                    <a href="/oauth/{{ integration.name }}/start"
-                       class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                        </svg>
-                        OAuth
-                    </a>
+                <div class="flex items-center gap-2">
+                    <a href="/oauth/{{ integration.name }}/start" class="inline-flex items-center text-xs font-medium text-primary-600 hover:text-primary-800 transition-colors">OAuth</a>
                     <span class="text-slate-300">|</span>
-                    <button type="button"
-                            onclick="showFigmaTokenModal()"
-                            class="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                        </svg>
-                        Token
-                    </button>
+                    <button type="button" onclick="showFigmaTokenModal()" class="inline-flex items-center text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors">Token</button>
                 </div>
                 {% elif integration.name == 'binance' %}
-                <button type="button"
-                        onclick="showBinanceTokenModal()"
-                        class="inline-flex items-center text-sm font-medium text-amber-600 hover:text-amber-800 transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                    </svg>
-                    Connect with API Key
+                <button type="button" onclick="showBinanceTokenModal()" class="inline-flex items-center text-xs font-medium text-amber-600 hover:text-amber-800 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    API Key
                 </button>
                 {% else %}
-                <a href="/oauth/{{ integration.name }}/start"
-                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                    </svg>
+                <a href="/oauth/{{ integration.name }}/start" class="inline-flex items-center text-xs font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     Connect
                 </a>
                 {% endif %}
                 {% endif %}
-                <button type="button"
-                        onclick="showConfigModal('{{ integration.name }}', '{{ integration.display_name }}')"
-                        class="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                    </svg>
+                <button type="button" onclick="showConfigModal('{{ integration.name }}', '{{ integration.display_name }}')" class="inline-flex items-center text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
                     Config
                 </button>
             </div>
@@ -216,15 +183,206 @@
         {% endfor %}
     </div>
 
-    {% if not integrations %}
-    <div class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-slate-900">No integrations available</h3>
-        <p class="mt-1 text-sm text-slate-500">Configure integrations in Admin Settings or your environment variables.</p>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+        <div class="mx-auto w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900">Welcome to MCP Hub</h3>
+        <p class="mt-2 text-sm text-slate-500 max-w-sm mx-auto">Add integrations to connect your services with AI assistants. Click the button below to browse available services.</p>
+        <button onclick="showAddModal()" class="mt-6 inline-flex items-center px-5 py-2.5 border-2 border-dashed border-primary-300 text-sm font-medium rounded-xl text-primary-700 bg-primary-50 hover:bg-primary-100 hover:border-primary-400 transition-all">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Browse Integrations
+        </button>
     </div>
     {% endif %}
+
+    <!-- Custom MCP Servers Section -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Custom MCP Servers</h2>
+                <p class="text-xs text-slate-500">Connect third-party MCP servers by URL</p>
+            </div>
+            <button onclick="showCustomServerModal()"
+                    class="inline-flex items-center px-3 py-2 border border-slate-200 text-xs font-medium rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Add Server
+            </button>
+        </div>
+
+        {% if custom_servers %}
+        <div class="space-y-3">
+            {% for server in custom_servers %}
+            <div class="bg-white rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all hover:shadow-sm {% if not server.is_enabled %}opacity-60{% endif %}">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-semibold text-slate-900 truncate">{{ server.display_name }}</h4>
+                            <!-- Health indicator -->
+                            {% if server.health_status == 'healthy' %}
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0" title="Healthy"></div>
+                            {% elif server.health_status == 'unhealthy' %}
+                            <div class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" title="Unhealthy"></div>
+                            {% else %}
+                            <div class="w-2 h-2 bg-slate-300 rounded-full flex-shrink-0" title="Unknown"></div>
+                            {% endif %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">{{ server.tools_count }} tools</span>
+                        </div>
+                        <p class="text-xs text-slate-400 truncate">{{ server.server_url }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <label class="relative inline-flex items-center cursor-pointer" title="{% if server.is_enabled %}Visible to AI{% else %}Hidden from AI{% endif %}">
+                        <input type="checkbox" class="sr-only peer"
+                               {% if server.is_enabled %}checked{% endif %}
+                               onchange="toggleCustomServer({{ server.id }}, this.checked)">
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                    </label>
+                    <button onclick="refreshCustomServer({{ server.id }})" class="p-1.5 text-slate-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-slate-100" title="Refresh tools">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                    <button onclick="deleteCustomServer({{ server.id }}, '{{ server.display_name }}')" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50" title="Delete server">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 bg-white rounded-xl border border-dashed border-slate-200">
+            <svg class="mx-auto w-8 h-8 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+            <p class="text-sm text-slate-400">No custom servers yet</p>
+            <p class="text-xs text-slate-400 mt-1">Add any MCP-compatible server by URL</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Add Integration Modal -->
+<div id="add-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-6 max-w-lg">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Add Integration</h3>
+                <button onclick="hideAddModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-4 space-y-2 max-h-96 overflow-y-auto" id="catalog-list">
+                {% for item in catalog %}
+                <form action="/dashboard/{{ item.name }}/add" method="post">
+                    <button type="submit" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary-300 hover:bg-primary-50 transition-all flex items-center gap-3 group">
+                        {% if item.name == 'teamwork' %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                        </div>
+                        {% elif item.name == 'slack' %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z"/></svg>
+                        </div>
+                        {% elif item.name == 'miro' %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.392 0H6.608C2.958 0 0 2.958 0 6.608v10.784C0 21.042 2.958 24 6.608 24h10.784C21.042 24 24 21.042 24 17.392V6.608C24 2.958 21.042 0 17.392 0zM20.1 17.9L18.1 7.6l-4 7-4-7-4 7-2-1.3 5.2-9.6h1.6l3.2 5.8 3.2-5.8h1.6l2.2 13.2z"/></svg>
+                        </div>
+                        {% elif item.name == 'figma' %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z"/></svg>
+                        </div>
+                        {% elif item.name == 'telegram' %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M9.04 15.176l-.375 5.267c.536 0 .768-.231 1.047-.508l2.52-2.39 5.224 3.82c.959.529 1.64.25 1.902-.887L23.91 3.31c.3-1.308-.473-1.82-1.33-1.5L1.3 10.02c-1.277.496-1.258 1.21-.22 1.531l5.494 1.714L19.2 5.9c.595-.395 1.136-.177.69.218z"/></svg>
+                        </div>
+                        {% elif item.name == 'binance' %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L6.5 7.5 8.62 9.62 12 6.24l3.38 3.38L17.5 7.5 12 2z"/></svg>
+                        </div>
+                        {% else %}
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center flex-shrink-0">
+                            <span class="text-sm font-bold text-white">{{ item.name[0]|upper }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="min-w-0 flex-1">
+                            <div class="text-sm font-medium text-slate-900">{{ item.display_name }}</div>
+                            <div class="text-xs text-slate-500 truncate">{{ item.description }}</div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-primary-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    </button>
+                </form>
+                {% endfor %}
+
+                {% if not catalog %}
+                <div class="text-center py-6 text-sm text-slate-400">All system integrations are already added</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Custom Server Modal -->
+<div id="custom-server-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-6 max-w-md">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Add Custom MCP Server</h3>
+                <button onclick="hideCustomServerModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
+                    <input type="text" id="custom-name" placeholder="e.g. My GitHub Bot"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Server URL</label>
+                    <input type="url" id="custom-url" placeholder="https://example.com/mcp"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Authentication</label>
+                    <select id="custom-auth-type" onchange="updateCustomAuthFields()"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="none">None</option>
+                        <option value="bearer">Bearer Token</option>
+                        <option value="custom_header">Custom Header</option>
+                    </select>
+                </div>
+
+                <div id="custom-auth-fields" class="hidden space-y-3">
+                    <div id="custom-header-name-field" class="hidden">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Header Name</label>
+                        <input type="text" id="custom-auth-header" placeholder="X-API-Key"
+                               class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Token / Secret</label>
+                        <input type="password" id="custom-auth-secret" placeholder="Your token..."
+                               class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+                    </div>
+                </div>
+
+                <div id="custom-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 break-words"></div>
+                <div id="custom-success" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-700"></div>
+
+                <button onclick="addCustomServer()" id="custom-submit-btn"
+                        class="w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg hover:from-indigo-700 hover:to-violet-700 transition-all font-medium">
+                    Test & Add Server
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Telegram Connect Modal -->
@@ -234,41 +392,24 @@
             <div class="px-6 py-4 bg-gradient-to-r from-sky-600 to-cyan-600 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-white">Connect Telegram</h3>
                 <button onclick="hideTelegramModal()" class="text-white/80 hover:text-white transition-colors">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-
             <div class="p-6 space-y-4">
                 <div id="telegram-step-phone">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Phone number</label>
-                    <input type="text" id="telegram-phone" placeholder="+1..."
-                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
-                    <button onclick="telegramStart()"
-                            class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-                        Send code
-                    </button>
+                    <input type="text" id="telegram-phone" placeholder="+1..." class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <button onclick="telegramStart()" class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">Send code</button>
                 </div>
-
                 <div id="telegram-step-code" class="hidden">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Verification code</label>
-                    <input type="text" id="telegram-code" placeholder="12345"
-                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
-                    <button onclick="telegramVerify()"
-                            class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-                        Verify code
-                    </button>
+                    <input type="text" id="telegram-code" placeholder="12345" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <button onclick="telegramVerify()" class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">Verify code</button>
                 </div>
-
                 <div id="telegram-step-password" class="hidden">
                     <label class="block text-sm font-medium text-slate-700 mb-1">2FA Password</label>
-                    <input type="password" id="telegram-password" placeholder="Telegram 2FA password"
-                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
-                    <button onclick="telegramSubmitPassword()"
-                            class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-                        Confirm
-                    </button>
+                    <input type="password" id="telegram-password" placeholder="Telegram 2FA password" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <button onclick="telegramSubmitPassword()" class="mt-4 w-full px-4 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">Confirm</button>
                 </div>
             </div>
         </div>
@@ -282,12 +423,9 @@
             <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-white">Connect Figma with Token</h3>
                 <button onclick="hideFigmaTokenModal()" class="text-white/80 hover:text-white transition-colors">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-
             <div class="p-6 space-y-4">
                 <div class="bg-primary-50 border border-primary-200 rounded-lg p-3 text-sm text-primary-800">
                     <p class="font-medium mb-1">How to get a Personal Access Token:</p>
@@ -295,21 +433,14 @@
                         <li>Go to <a href="https://www.figma.com/settings" target="_blank" class="underline font-medium hover:text-primary-900">Figma Settings</a></li>
                         <li>Scroll to <strong>Personal access tokens</strong></li>
                         <li>Click <strong>Generate new token</strong></li>
-                        <li>Give it a name, select scopes, and copy the token</li>
+                        <li>Copy the token</li>
                     </ol>
-                    <p class="mt-2 text-xs text-primary-600">PAT works across all teams, no OAuth app needed.</p>
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Personal Access Token</label>
-                    <input type="text" id="figma-pat-input" placeholder="figd_..."
-                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm">
+                    <input type="text" id="figma-pat-input" placeholder="figd_..." class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm">
                 </div>
-
-                <button onclick="figmaTokenConnect()" id="figma-token-btn"
-                        class="w-full px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-medium">
-                    Connect
-                </button>
+                <button onclick="figmaTokenConnect()" id="figma-token-btn" class="w-full px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-medium">Connect</button>
             </div>
         </div>
     </div>
@@ -322,44 +453,29 @@
             <div class="px-6 py-4 bg-gradient-to-r from-yellow-500 to-amber-600 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-white">Connect Binance</h3>
                 <button onclick="hideBinanceTokenModal()" class="text-white/80 hover:text-white transition-colors">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-
             <div class="p-6 space-y-4">
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
                     <p class="font-medium mb-1">How to get an API Key:</p>
                     <ol class="list-decimal list-inside space-y-1 text-xs text-amber-700">
                         <li>Go to <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" class="underline font-medium hover:text-amber-900">Binance API Management</a></li>
-                        <li>Click <strong>Create API</strong> and choose <strong>System generated</strong></li>
-                        <li>Complete security verification</li>
-                        <li>Enable permissions: <strong>Enable Reading</strong> + <strong>Enable Spot & Margin Trading</strong></li>
-                        <li>Set <strong>IP restrictions</strong> for security (recommended)</li>
-                        <li>Copy the <strong>API Key</strong> and <strong>Secret Key</strong></li>
+                        <li>Click <strong>Create API</strong></li>
+                        <li>Enable <strong>Reading</strong> + <strong>Spot Trading</strong></li>
+                        <li>Copy API Key and Secret Key</li>
                     </ol>
-                    <p class="mt-2 text-xs text-amber-600">Secret Key is shown only once. Save it safely.</p>
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
-                    <input type="text" id="binance-api-key-input" placeholder="Your API Key..."
-                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-sm">
+                    <input type="text" id="binance-api-key-input" placeholder="Your API Key..." class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-sm">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Secret Key</label>
-                    <input type="password" id="binance-api-secret-input" placeholder="Your Secret Key..."
-                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-sm">
+                    <input type="password" id="binance-api-secret-input" placeholder="Your Secret Key..." class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-sm">
                 </div>
-
                 <div id="binance-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 break-words"></div>
-
-                <button onclick="binanceTokenConnect()" id="binance-token-btn"
-                        class="w-full px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-lg hover:from-yellow-600 hover:to-amber-700 transition-all font-medium">
-                    Connect
-                </button>
+                <button onclick="binanceTokenConnect()" id="binance-token-btn" class="w-full px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-lg hover:from-yellow-600 hover:to-amber-700 transition-all font-medium">Connect</button>
             </div>
         </div>
     </div>
@@ -371,47 +487,27 @@
         <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div class="px-4 sm:px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-white flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                    </svg>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
                     <span class="hidden sm:inline">MCP Configuration</span>
                     <span class="sm:hidden">Config</span>
                     <span id="config-scope-label" class="ml-2 text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">All</span>
                 </h3>
                 <button onclick="hideConfigModal()" class="text-white/80 hover:text-white transition-colors">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-
             <div class="p-4 sm:p-6 space-y-5">
-                <!-- Server URL - Main Focus -->
                 <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
                     <label class="block text-xs font-medium text-slate-500 mb-2">Server URL (MCP Endpoint)</label>
                     <div class="flex items-center gap-2">
-                        <input id="config-server-url" type="text" readonly
-                               class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 font-mono text-sm">
-                        <button type="button" onclick="copyText('config-server-url')"
-                                class="px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap">
-                            Copy
-                        </button>
+                        <input id="config-server-url" type="text" readonly class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 font-mono text-sm">
+                        <button type="button" onclick="copyText('config-server-url')" class="px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap">Copy</button>
                     </div>
                 </div>
-
-                <!-- Mode Tabs -->
                 <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-3" id="mode-buttons">
-                    <button type="button" data-mode="bearer"
-                            class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700">
-                        Bearer Token (Claude/Cursor)
-                    </button>
-                    <button type="button" data-mode="oauth"
-                            class="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100">
-                        OAuth (ChatGPT)
-                    </button>
+                    <button type="button" data-mode="bearer" class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700">Bearer Token (Claude/Cursor)</button>
+                    <button type="button" data-mode="oauth" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100">OAuth (ChatGPT)</button>
                 </div>
-
-                <!-- Bearer Panel -->
                 <div id="bearer-panel" class="space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -419,99 +515,61 @@
                             <p class="text-xs text-slate-500">Copy and paste into your MCP client config</p>
                         </div>
                         <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1" id="token-type-buttons">
-                            <button type="button" data-token="pat"
-                                    class="px-3 py-1.5 text-xs sm:text-sm rounded-md text-slate-600 hover:text-slate-900">
-                                PAT (long-lived)
-                            </button>
-                            <button type="button" data-token="jwt"
-                                    class="px-3 py-1.5 text-xs sm:text-sm rounded-md text-slate-600 hover:text-slate-900">
-                                JWT (session)
-                            </button>
+                            <button type="button" data-token="pat" class="px-3 py-1.5 text-xs sm:text-sm rounded-md text-slate-600 hover:text-slate-900">PAT (long-lived)</button>
+                            <button type="button" data-token="jwt" class="px-3 py-1.5 text-xs sm:text-sm rounded-md text-slate-600 hover:text-slate-900">JWT (session)</button>
                         </div>
                     </div>
-
                     <div id="pat-tools" class="hidden space-y-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <label class="block text-xs font-medium text-amber-800">Personal Access Token</label>
                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                            <input id="pat-input" type="text" placeholder="Paste existing PAT or generate new"
-                                   class="flex-1 px-3 py-2 border border-amber-300 rounded-lg bg-white text-sm">
+                            <input id="pat-input" type="text" placeholder="Paste existing PAT or generate new" class="flex-1 px-3 py-2 border border-amber-300 rounded-lg bg-white text-sm">
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="applyPatToken()"
-                                        class="px-3 py-2 rounded-lg text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors">
-                                    Apply
-                                </button>
-                                <button type="button" onclick="generatePatToken()"
-                                        class="px-3 py-2 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">
-                                    Generate New
-                                </button>
+                                <button type="button" onclick="applyPatToken()" class="px-3 py-2 rounded-lg text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors">Apply</button>
+                                <button type="button" onclick="generatePatToken()" class="px-3 py-2 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">Generate New</button>
                             </div>
                         </div>
                     </div>
-
                     <div class="relative">
                         <pre id="config-json" class="bg-slate-900 text-emerald-400 p-4 rounded-lg text-xs sm:text-sm overflow-x-auto font-mono max-h-64 overflow-y-auto"></pre>
-                        <button onclick="copyConfig()"
-                                class="absolute top-3 right-3 inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                            </svg>
+                        <button onclick="copyConfig()" class="absolute top-3 right-3 inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                             Copy
                         </button>
                     </div>
-
                     <p id="token-note" class="text-xs text-slate-500"></p>
                 </div>
-
-                <!-- OAuth Panel -->
                 <div id="oauth-panel" class="hidden space-y-4">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h4 class="text-sm font-semibold text-blue-900 mb-2">ChatGPT Setup</h4>
-                        <p class="text-xs text-blue-700 mb-3">
-                            ChatGPT auto-discovers OAuth via the Server URL. Just paste the URL when adding MCP action.
-                        </p>
+                        <p class="text-xs text-blue-700 mb-3">ChatGPT auto-discovers OAuth via the Server URL. Just paste the URL when adding MCP action.</p>
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-medium text-blue-800 mb-1">Token URL</label>
                                 <div class="flex items-center gap-2">
-                                    <input id="oauth-token-url" type="text" readonly
-                                           class="block w-full px-3 py-2 border border-blue-300 rounded-lg bg-white text-slate-700 text-sm font-mono">
-                                    <button type="button" onclick="copyText('oauth-token-url')"
-                                            class="px-3 py-2 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-                                        Copy
-                                    </button>
+                                    <input id="oauth-token-url" type="text" readonly class="block w-full px-3 py-2 border border-blue-300 rounded-lg bg-white text-slate-700 text-sm font-mono">
+                                    <button type="button" onclick="copyText('oauth-token-url')" class="px-3 py-2 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">Copy</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- OAuth JSON (collapsed by default) -->
                     <details class="rounded-xl border border-slate-200 overflow-hidden">
-                        <summary class="px-4 py-3 bg-slate-50 cursor-pointer text-sm font-medium text-slate-700 hover:bg-slate-100">
-                            OAuth Client Credentials (Advanced)
-                        </summary>
+                        <summary class="px-4 py-3 bg-slate-50 cursor-pointer text-sm font-medium text-slate-700 hover:bg-slate-100">OAuth Client Credentials (Advanced)</summary>
                         <div class="p-4 space-y-3 bg-white">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-medium text-slate-500 mb-1">Client ID</label>
-                                    <input id="oauth-client-id" type="text" readonly placeholder="Select or create"
-                                           class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700 text-sm">
+                                    <input id="oauth-client-id" type="text" readonly placeholder="Select or create" class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700 text-sm">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-slate-500 mb-1">Client Secret</label>
-                                    <input id="oauth-client-secret" type="text" readonly placeholder="Reveal to view"
-                                           class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700 text-sm">
+                                    <input id="oauth-client-secret" type="text" readonly placeholder="Reveal to view" class="block w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700 text-sm">
                                 </div>
                             </div>
-
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200">
                                 <span class="text-xs text-slate-500">Saved credentials</span>
                                 <div class="flex items-center gap-2">
-                                    <input id="new-client-name" type="text" placeholder="Name (optional)"
-                                           class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm w-32">
-                                    <button type="button" onclick="createClientCredentials()"
-                                            class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
-                                        Create
-                                    </button>
+                                    <input id="new-client-name" type="text" placeholder="Name (optional)" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm w-32">
+                                    <button type="button" onclick="createClientCredentials()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Create</button>
                                 </div>
                             </div>
                             <div id="client-credentials-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
@@ -526,6 +584,156 @@
 
 {% block scripts %}
 <script>
+    // ── Modal helpers ─────────────────────────────────────────────
+    function setupModalBackdrop(modalId, hideFn) {
+        const modal = document.getElementById(modalId);
+        let mouseDownOnBackdrop = false;
+        modal.addEventListener('mousedown', function(e) { mouseDownOnBackdrop = (e.target === modal); });
+        modal.addEventListener('mouseup', function(e) { if (mouseDownOnBackdrop && e.target === modal) hideFn(); mouseDownOnBackdrop = false; });
+    }
+
+    // ── Add Integration Modal ─────────────────────────────────────
+    function showAddModal() { document.getElementById('add-modal').classList.remove('hidden'); }
+    function hideAddModal() { document.getElementById('add-modal').classList.add('hidden'); }
+    setupModalBackdrop('add-modal', hideAddModal);
+
+    // ── Toggle & Remove ───────────────────────────────────────────
+    async function toggleIntegration(provider, enabled) {
+        try {
+            const resp = await fetch(`/integrations/dashboard/${provider}/toggle`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({is_enabled: enabled}),
+            });
+            if (!resp.ok) throw new Error('Failed');
+            showToast(enabled ? 'Visible to AI' : 'Hidden from AI', 'success');
+            setTimeout(() => window.location.reload(), 500);
+        } catch (e) { showToast('Failed to toggle', 'error'); }
+    }
+
+    function removeIntegration(provider) {
+        if (!confirm('Remove this integration from your dashboard?')) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/dashboard/${provider}/remove`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // ── Custom MCP Servers ────────────────────────────────────────
+    function showCustomServerModal() {
+        document.getElementById('custom-name').value = '';
+        document.getElementById('custom-url').value = '';
+        document.getElementById('custom-auth-type').value = 'none';
+        document.getElementById('custom-auth-secret').value = '';
+        document.getElementById('custom-auth-header').value = '';
+        document.getElementById('custom-error').classList.add('hidden');
+        document.getElementById('custom-success').classList.add('hidden');
+        document.getElementById('custom-submit-btn').disabled = false;
+        document.getElementById('custom-submit-btn').textContent = 'Test & Add Server';
+        updateCustomAuthFields();
+        document.getElementById('custom-server-modal').classList.remove('hidden');
+    }
+    function hideCustomServerModal() { document.getElementById('custom-server-modal').classList.add('hidden'); }
+    setupModalBackdrop('custom-server-modal', hideCustomServerModal);
+
+    function updateCustomAuthFields() {
+        const authType = document.getElementById('custom-auth-type').value;
+        const fields = document.getElementById('custom-auth-fields');
+        const headerField = document.getElementById('custom-header-name-field');
+        fields.classList.toggle('hidden', authType === 'none');
+        headerField.classList.toggle('hidden', authType !== 'custom_header');
+    }
+
+    async function addCustomServer() {
+        const name = document.getElementById('custom-name').value.trim();
+        const url = document.getElementById('custom-url').value.trim();
+        const authType = document.getElementById('custom-auth-type').value;
+        const authSecret = document.getElementById('custom-auth-secret').value.trim();
+        const authHeader = document.getElementById('custom-auth-header').value.trim();
+        const errEl = document.getElementById('custom-error');
+        const successEl = document.getElementById('custom-success');
+        const btn = document.getElementById('custom-submit-btn');
+
+        errEl.classList.add('hidden');
+        successEl.classList.add('hidden');
+
+        if (!name || !url) {
+            errEl.textContent = 'Name and URL are required';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Connecting...';
+
+        try {
+            const body = { display_name: name, server_url: url, auth_type: authType };
+            if (authType !== 'none' && authSecret) body.auth_secret = authSecret;
+            if (authType === 'custom_header' && authHeader) body.auth_header_name = authHeader;
+
+            const resp = await fetch('/integrations/custom-servers', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body),
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.detail || 'Failed to add server');
+            }
+
+            const data = await resp.json();
+            successEl.textContent = `Connected! Discovered ${data.tools_count} tools.`;
+            successEl.classList.remove('hidden');
+            showToast(`Added ${name} with ${data.tools_count} tools`, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (e) {
+            errEl.textContent = e.message;
+            errEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Test & Add Server';
+        }
+    }
+
+    async function toggleCustomServer(serverId, enabled) {
+        try {
+            const resp = await fetch(`/integrations/custom-servers/${serverId}/toggle`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({is_enabled: enabled}),
+            });
+            if (!resp.ok) throw new Error('Failed');
+            showToast(enabled ? 'Visible to AI' : 'Hidden from AI', 'success');
+            setTimeout(() => window.location.reload(), 500);
+        } catch (e) { showToast('Failed to toggle', 'error'); }
+    }
+
+    async function refreshCustomServer(serverId) {
+        try {
+            showToast('Refreshing...', 'success');
+            const resp = await fetch(`/integrations/custom-servers/${serverId}/refresh`, { method: 'POST' });
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.detail || 'Failed');
+            }
+            const data = await resp.json();
+            showToast(`Healthy! ${data.tools_count} tools`, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (e) { showToast(e.message, 'error'); }
+    }
+
+    async function deleteCustomServer(serverId, name) {
+        if (!confirm(`Delete "${name}"?`)) return;
+        try {
+            const resp = await fetch(`/integrations/custom-servers/${serverId}`, { method: 'DELETE' });
+            if (!resp.ok) throw new Error('Failed');
+            showToast('Deleted', 'success');
+            setTimeout(() => window.location.reload(), 500);
+        } catch (e) { showToast('Failed to delete', 'error'); }
+    }
+
+    // ── Config Modal ──────────────────────────────────────────────
     let configData = null;
     let configProvider = null;
     let configBadge = 'All';
@@ -537,7 +745,6 @@
     let clientSecrets = {};
     let selectedClientId = null;
     let clientCredentialsLoaded = false;
-    let telegramLoginId = null;
     let baseUrl = '';
 
     async function showConfigModal(provider = null, displayName = null) {
@@ -548,66 +755,38 @@
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to get config');
             configData = await response.json();
-
-            // Extract base URL from mcp URL
             const server = Object.values(configData.mcpServers)[0];
             baseUrl = server.url.replace(/\/mcp$/, '');
-
             updateScopeLabel();
             initConfigUi();
             document.getElementById('config-modal').classList.remove('hidden');
-        } catch (error) {
-            showToast('Failed to generate config', 'error');
-        }
+        } catch (error) { showToast('Failed to generate config', 'error'); }
     }
-
-    function hideConfigModal() {
-        document.getElementById('config-modal').classList.add('hidden');
-    }
-
-    function copyConfig() {
-        const configText = document.getElementById('config-json').textContent;
-        navigator.clipboard.writeText(configText).then(() => {
-            showToast('Configuration copied!', 'success');
-        }).catch(() => {
-            showToast('Failed to copy', 'error');
-        });
-    }
-
-    function copyText(inputId) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        const value = input.value || input.textContent || '';
-        if (!value) return;
-        navigator.clipboard.writeText(value).then(() => {
-            showToast('Copied!', 'success');
-        }).catch(() => {
-            showToast('Failed to copy', 'error');
-        });
-    }
-
+    function hideConfigModal() { document.getElementById('config-modal').classList.add('hidden'); }
     setupModalBackdrop('config-modal', hideConfigModal);
 
-    function updateScopeLabel() {
-        document.getElementById('config-scope-label').textContent = configBadge;
+    function copyConfig() {
+        const t = document.getElementById('config-json').textContent;
+        navigator.clipboard.writeText(t).then(() => showToast('Copied!', 'success')).catch(() => showToast('Failed', 'error'));
+    }
+    function copyText(id) {
+        const el = document.getElementById(id);
+        const v = el.value || el.textContent || '';
+        if (!v) return;
+        navigator.clipboard.writeText(v).then(() => showToast('Copied!', 'success')).catch(() => showToast('Failed', 'error'));
     }
 
-    function buildConfig() {
-        if (!configData || !configData.mcpServers) return null;
-        return configData;
-    }
+    function updateScopeLabel() { document.getElementById('config-scope-label').textContent = configBadge; }
+
+    function buildConfig() { return configData && configData.mcpServers ? configData : null; }
 
     function renderMetaFields() {
-        const baseConfig = buildConfig();
-        if (!baseConfig) return;
-        const server = Object.values(baseConfig.mcpServers)[0];
-        document.getElementById('config-server-url').value = server.url;
+        const c = buildConfig(); if (!c) return;
+        document.getElementById('config-server-url').value = Object.values(c.mcpServers)[0].url;
     }
 
     function initConfigUi() {
-        configMode = 'bearer';
-        tokenMode = 'pat';
-        clientCredentialsLoaded = false;
+        configMode = 'bearer'; tokenMode = 'pat'; clientCredentialsLoaded = false;
         renderMetaFields();
         updateButtonGroup('mode-buttons', 'mode', configMode);
         updateButtonGroup('token-type-buttons', 'token', tokenMode);
@@ -617,8 +796,7 @@
     }
 
     function updateButtonGroup(containerId, dataAttr, value) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
+        const container = document.getElementById(containerId); if (!container) return;
         container.querySelectorAll('button').forEach(btn => {
             const isActive = btn.dataset[dataAttr] === value;
             if (containerId === 'mode-buttons') {
@@ -635,86 +813,49 @@
         });
     }
 
-    function formatExpiry(isoValue) {
-        if (!isoValue) return '';
-        const date = new Date(isoValue);
-        if (Number.isNaN(date.getTime())) return isoValue;
-        const now = new Date();
-        const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        return `Expires in ${diffDays} days`;
+    function formatExpiry(v) {
+        if (!v) return '';
+        const d = new Date(v); if (Number.isNaN(d.getTime())) return v;
+        return `Expires in ${Math.ceil((d - new Date()) / 86400000)} days`;
     }
 
     function renderBearerConfig() {
-        const baseConfig = buildConfig();
-        if (!baseConfig) return;
+        const c = buildConfig(); if (!c) return;
         document.getElementById('pat-tools').classList.toggle('hidden', tokenMode !== 'pat');
+        if (tokenMode === 'pat') document.getElementById('pat-input').value = patToken || '';
         if (tokenMode === 'pat') {
-            document.getElementById('pat-input').value = patToken || '';
-        }
-
-        if (tokenMode === 'pat') {
-            const patched = JSON.parse(JSON.stringify(baseConfig));
-            const tokenValue = patToken || '<YOUR_PAT_TOKEN>';
-            Object.values(patched.mcpServers).forEach(server => {
-                if (!server.headers) server.headers = {};
-                server.headers.Authorization = `Bearer ${tokenValue}`;
-            });
-            document.getElementById('config-json').textContent = JSON.stringify(patched, null, 2);
-            if (patToken && patExpiresAt) {
-                document.getElementById('token-note').textContent = formatExpiry(patExpiresAt);
-            } else if (patToken) {
-                document.getElementById('token-note').textContent = 'PAT applied. Long-lived token for production use.';
-            } else {
-                document.getElementById('token-note').textContent = 'Generate a Personal Access Token for long-lived access (30+ days).';
-            }
+            const p = JSON.parse(JSON.stringify(c));
+            const tv = patToken || '<YOUR_PAT_TOKEN>';
+            Object.values(p.mcpServers).forEach(s => { if (!s.headers) s.headers = {}; s.headers.Authorization = `Bearer ${tv}`; });
+            document.getElementById('config-json').textContent = JSON.stringify(p, null, 2);
+            document.getElementById('token-note').textContent = patToken && patExpiresAt ? formatExpiry(patExpiresAt) : patToken ? 'PAT applied.' : 'Generate a PAT for long-lived access (30+ days).';
             return;
         }
-
-        document.getElementById('config-json').textContent = JSON.stringify(baseConfig, null, 2);
+        document.getElementById('config-json').textContent = JSON.stringify(c, null, 2);
         document.getElementById('token-note').textContent = 'JWT session token. Valid for current session only.';
     }
 
     function applyPatToken() {
-        const input = document.getElementById('pat-input');
-        const value = input.value.trim();
-        if (!value) {
-            showToast('Paste a PAT first', 'error');
-            return;
-        }
-        patToken = value;
-        patExpiresAt = null;
-        tokenMode = 'pat';
-        updateButtonGroup('token-type-buttons', 'token', tokenMode);
-        renderBearerConfig();
+        const v = document.getElementById('pat-input').value.trim();
+        if (!v) return showToast('Paste a PAT first', 'error');
+        patToken = v; patExpiresAt = null; tokenMode = 'pat';
+        updateButtonGroup('token-type-buttons', 'token', tokenMode); renderBearerConfig();
         showToast('PAT applied', 'success');
     }
 
     async function generatePatToken() {
         try {
-            const response = await fetch('/auth/personal_token', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ expires_days: 30 }),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to generate PAT');
-            }
-            const data = await response.json();
-            patToken = data.token;
-            patExpiresAt = data.expires_at;
+            const r = await fetch('/auth/personal_token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({expires_days: 30}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            const d = await r.json();
+            patToken = d.token; patExpiresAt = d.expires_at;
             document.getElementById('pat-input').value = patToken;
-            tokenMode = 'pat';
-            updateButtonGroup('token-type-buttons', 'token', tokenMode);
-            renderBearerConfig();
+            tokenMode = 'pat'; updateButtonGroup('token-type-buttons', 'token', tokenMode); renderBearerConfig();
             showToast('PAT generated!', 'success');
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
     function renderOauthFields() {
-        // Build proper token URL from base URL
         document.getElementById('oauth-token-url').value = baseUrl + '/oauth/token';
         document.getElementById('oauth-client-id').value = selectedClientId || '';
         document.getElementById('oauth-client-secret').value = selectedClientId ? (clientSecrets[selectedClientId] || '') : '';
@@ -723,145 +864,82 @@
     async function createClientCredentials() {
         try {
             const name = document.getElementById('new-client-name').value.trim() || null;
-            const response = await fetch('/auth/client_credentials', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name }),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to create credentials');
-            }
-            const data = await response.json();
-            clientSecrets[data.client_id] = data.client_secret;
-            selectedClientId = data.client_id;
+            const r = await fetch('/auth/client_credentials', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            const d = await r.json();
+            clientSecrets[d.client_id] = d.client_secret; selectedClientId = d.client_id;
             await loadClientCredentials();
             document.getElementById('new-client-name').value = '';
-            renderOauthFields();
-            showToast('Credentials created', 'success');
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+            renderOauthFields(); showToast('Credentials created', 'success');
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
     async function loadClientCredentials() {
         try {
-            const response = await fetch('/auth/client_credentials');
-            if (!response.ok) throw new Error('Failed to load credentials');
-            const data = await response.json();
-            clientCredentials = data.items || [];
-            if (!selectedClientId && clientCredentials.length) {
-                selectedClientId = clientCredentials[0].client_id;
-            }
+            const r = await fetch('/auth/client_credentials');
+            if (!r.ok) throw new Error('Failed');
+            const d = await r.json();
+            clientCredentials = d.items || [];
+            if (!selectedClientId && clientCredentials.length) selectedClientId = clientCredentials[0].client_id;
             clientCredentialsLoaded = true;
-            renderClientCredentials();
-            renderOauthFields();
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+            renderClientCredentials(); renderOauthFields();
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
     function renderClientCredentials() {
-        const container = document.getElementById('client-credentials-list');
-        container.innerHTML = '';
-        if (!clientCredentials.length) {
-            container.innerHTML = '<div class="text-xs text-slate-500 py-2">No credentials yet. Create one above.</div>';
-            return;
-        }
+        const c = document.getElementById('client-credentials-list');
+        c.innerHTML = '';
+        if (!clientCredentials.length) { c.innerHTML = '<div class="text-xs text-slate-500 py-2">No credentials yet.</div>'; return; }
         clientCredentials.forEach(item => {
             const isActive = selectedClientId === item.client_id;
             const row = document.createElement('div');
             row.className = `flex items-center justify-between border rounded-lg px-3 py-2 text-sm ${isActive ? 'border-primary-300 bg-primary-50' : 'border-slate-200'}`;
-            row.innerHTML = `
-                <div class="min-w-0 truncate">
-                    <span class="font-medium">${item.name || 'Credential'}</span>
-                    <span class="text-slate-400 text-xs ml-2">${item.client_id.slice(0, 12)}...</span>
-                </div>
-                <div class="flex items-center gap-1 flex-shrink-0">
-                    <button class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200" data-action="use">Use</button>
-                    <button class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200" data-action="reveal">Reveal</button>
-                    <button class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200" data-action="delete">X</button>
-                </div>
-            `;
+            row.innerHTML = `<div class="min-w-0 truncate"><span class="font-medium">${item.name || 'Credential'}</span><span class="text-slate-400 text-xs ml-2">${item.client_id.slice(0, 12)}...</span></div><div class="flex items-center gap-1 flex-shrink-0"><button class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200" data-action="use">Use</button><button class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200" data-action="reveal">Reveal</button><button class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200" data-action="delete">X</button></div>`;
             row.querySelector('[data-action="use"]').addEventListener('click', () => selectClientCredential(item.client_id));
             row.querySelector('[data-action="reveal"]').addEventListener('click', () => revealClientCredential(item.client_id));
             row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteClientCredential(item.client_id));
-            container.appendChild(row);
+            c.appendChild(row);
         });
     }
 
-    async function selectClientCredential(clientId) {
-        selectedClientId = clientId;
-        if (!clientSecrets[clientId]) {
-            await revealClientCredential(clientId, false);
-        }
-        renderOauthFields();
-        renderClientCredentials();
-    }
-
-    async function revealClientCredential(clientId, notify = true) {
+    async function selectClientCredential(cid) { selectedClientId = cid; if (!clientSecrets[cid]) await revealClientCredential(cid, false); renderOauthFields(); renderClientCredentials(); }
+    async function revealClientCredential(cid, notify = true) {
         try {
-            const response = await fetch(`/auth/client_credentials/${clientId}`);
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to reveal');
-            }
-            const data = await response.json();
-            clientSecrets[data.client_id] = data.client_secret;
-            if (selectedClientId === clientId) {
-                renderOauthFields();
-            }
-            if (notify) showToast('Secret revealed', 'success');
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+            const r = await fetch(`/auth/client_credentials/${cid}`);
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            const d = await r.json(); clientSecrets[d.client_id] = d.client_secret;
+            if (selectedClientId === cid) renderOauthFields();
+            if (notify) showToast('Revealed', 'success');
+        } catch (e) { showToast(e.message, 'error'); }
     }
-
-    async function deleteClientCredential(clientId) {
-        if (!confirm('Delete this credential?')) return;
+    async function deleteClientCredential(cid) {
+        if (!confirm('Delete?')) return;
         try {
-            const response = await fetch(`/auth/client_credentials/${clientId}`, { method: 'DELETE' });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to delete');
-            }
-            if (selectedClientId === clientId) {
-                selectedClientId = null;
-                renderOauthFields();
-            }
-            await loadClientCredentials();
-            showToast('Deleted', 'success');
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+            const r = await fetch(`/auth/client_credentials/${cid}`, {method: 'DELETE'});
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            if (selectedClientId === cid) { selectedClientId = null; renderOauthFields(); }
+            await loadClientCredentials(); showToast('Deleted', 'success');
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
     document.getElementById('mode-buttons').addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
+        const btn = e.target.closest('button'); if (!btn) return;
         configMode = btn.dataset.mode;
         updateButtonGroup('mode-buttons', 'mode', configMode);
         document.getElementById('bearer-panel').classList.toggle('hidden', configMode !== 'bearer');
         document.getElementById('oauth-panel').classList.toggle('hidden', configMode !== 'oauth');
-        if (configMode === 'oauth') {
-            if (!clientCredentialsLoaded) {
-                loadClientCredentials();
-            } else {
-                renderOauthFields();
-            }
-        } else {
-            renderBearerConfig();
-        }
+        if (configMode === 'oauth') { if (!clientCredentialsLoaded) loadClientCredentials(); else renderOauthFields(); }
+        else renderBearerConfig();
     });
 
     document.getElementById('token-type-buttons').addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
+        const btn = e.target.closest('button'); if (!btn) return;
         tokenMode = btn.dataset.token;
-        updateButtonGroup('token-type-buttons', 'token', tokenMode);
-        renderBearerConfig();
+        updateButtonGroup('token-type-buttons', 'token', tokenMode); renderBearerConfig();
     });
 
+    // ── Telegram Modal ────────────────────────────────────────────
+    let telegramLoginId = null;
     function showTelegramModal() {
         telegramLoginId = null;
         document.getElementById('telegram-phone').value = '';
@@ -872,148 +950,76 @@
         document.getElementById('telegram-step-password').classList.add('hidden');
         document.getElementById('telegram-modal').classList.remove('hidden');
     }
-
-    function hideTelegramModal() {
-        document.getElementById('telegram-modal').classList.add('hidden');
-    }
+    function hideTelegramModal() { document.getElementById('telegram-modal').classList.add('hidden'); }
+    setupModalBackdrop('telegram-modal', hideTelegramModal);
 
     async function telegramStart() {
         const phone = document.getElementById('telegram-phone').value.trim();
-        if (!phone) return showToast('Enter phone number', 'error');
+        if (!phone) return showToast('Enter phone', 'error');
         try {
-            const response = await fetch('/integrations/telegram/start', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({phone}),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to start');
-            }
-            const data = await response.json();
-            telegramLoginId = data.login_id;
+            const r = await fetch('/integrations/telegram/start', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({phone}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            telegramLoginId = (await r.json()).login_id;
             document.getElementById('telegram-step-phone').classList.add('hidden');
             document.getElementById('telegram-step-code').classList.remove('hidden');
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
     async function telegramVerify() {
         const code = document.getElementById('telegram-code').value.trim();
         if (!telegramLoginId || !code) return showToast('Enter code', 'error');
         try {
-            const response = await fetch('/integrations/telegram/verify', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({login_id: telegramLoginId, code}),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to verify');
-            }
-            const data = await response.json();
-            if (data.requires_password) {
-                document.getElementById('telegram-step-code').classList.add('hidden');
-                document.getElementById('telegram-step-password').classList.remove('hidden');
-            } else {
-                window.location.reload();
-            }
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+            const r = await fetch('/integrations/telegram/verify', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({login_id: telegramLoginId, code}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            const d = await r.json();
+            if (d.requires_password) { document.getElementById('telegram-step-code').classList.add('hidden'); document.getElementById('telegram-step-password').classList.remove('hidden'); }
+            else window.location.reload();
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
     async function telegramSubmitPassword() {
-        const password = document.getElementById('telegram-password').value;
-        if (!telegramLoginId || !password) return showToast('Enter password', 'error');
+        const pw = document.getElementById('telegram-password').value;
+        if (!telegramLoginId || !pw) return showToast('Enter password', 'error');
         try {
-            const response = await fetch('/integrations/telegram/password', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({login_id: telegramLoginId, password}),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to verify');
-            }
+            const r = await fetch('/integrations/telegram/password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({login_id: telegramLoginId, password: pw}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
             window.location.reload();
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
+        } catch (e) { showToast(e.message, 'error'); }
     }
 
-    // Modal backdrop close: only close if both mousedown and mouseup happen on the backdrop
-    function setupModalBackdrop(modalId, hideFn) {
-        const modal = document.getElementById(modalId);
-        let mouseDownOnBackdrop = false;
-        modal.addEventListener('mousedown', function(e) {
-            mouseDownOnBackdrop = (e.target === modal);
-        });
-        modal.addEventListener('mouseup', function(e) {
-            if (mouseDownOnBackdrop && e.target === modal) hideFn();
-            mouseDownOnBackdrop = false;
-        });
-    }
-    setupModalBackdrop('telegram-modal', hideTelegramModal);
-
-    // Figma Token
+    // ── Figma Token Modal ─────────────────────────────────────────
     function showFigmaTokenModal() {
         document.getElementById('figma-pat-input').value = '';
         document.getElementById('figma-token-btn').disabled = false;
         document.getElementById('figma-token-btn').textContent = 'Connect';
         document.getElementById('figma-token-modal').classList.remove('hidden');
     }
-
-    function hideFigmaTokenModal() {
-        document.getElementById('figma-token-modal').classList.add('hidden');
-    }
-
+    function hideFigmaTokenModal() { document.getElementById('figma-token-modal').classList.add('hidden'); }
     setupModalBackdrop('figma-token-modal', hideFigmaTokenModal);
 
     async function figmaTokenConnect() {
         const token = document.getElementById('figma-pat-input').value.trim();
-        if (!token) return showToast('Paste your Figma token', 'error');
-
+        if (!token) return showToast('Paste your token', 'error');
         const btn = document.getElementById('figma-token-btn');
-        btn.disabled = true;
-        btn.textContent = 'Connecting...';
-
+        btn.disabled = true; btn.textContent = 'Connecting...';
         try {
-            const response = await fetch('/integrations/figma/token', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({token}),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to connect');
-            }
+            const r = await fetch('/integrations/figma/token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
             showToast('Connected to Figma!', 'success');
             setTimeout(() => window.location.reload(), 1000);
-        } catch (error) {
-            showToast(error.message, 'error');
-            btn.disabled = false;
-            btn.textContent = 'Connect';
-        }
+        } catch (e) { showToast(e.message, 'error'); btn.disabled = false; btn.textContent = 'Connect'; }
     }
 
-    // Binance Token
+    // ── Binance Token Modal ───────────────────────────────────────
     function showBinanceTokenModal() {
         document.getElementById('binance-api-key-input').value = '';
         document.getElementById('binance-api-secret-input').value = '';
         document.getElementById('binance-token-btn').disabled = false;
         document.getElementById('binance-token-btn').textContent = 'Connect';
-        const errEl = document.getElementById('binance-error');
-        errEl.classList.add('hidden');
-        errEl.textContent = '';
+        const e = document.getElementById('binance-error'); e.classList.add('hidden'); e.textContent = '';
         document.getElementById('binance-token-modal').classList.remove('hidden');
     }
-
-    function hideBinanceTokenModal() {
-        document.getElementById('binance-token-modal').classList.add('hidden');
-    }
-
+    function hideBinanceTokenModal() { document.getElementById('binance-token-modal').classList.add('hidden'); }
     setupModalBackdrop('binance-token-modal', hideBinanceTokenModal);
 
     async function binanceTokenConnect() {
@@ -1021,36 +1027,15 @@
         const apiSecret = document.getElementById('binance-api-secret-input').value.trim();
         const errEl = document.getElementById('binance-error');
         errEl.classList.add('hidden');
-
-        if (!apiKey || !apiSecret) {
-            errEl.textContent = 'Enter both API Key and Secret Key';
-            errEl.classList.remove('hidden');
-            return;
-        }
-
+        if (!apiKey || !apiSecret) { errEl.textContent = 'Both fields required'; errEl.classList.remove('hidden'); return; }
         const btn = document.getElementById('binance-token-btn');
-        btn.disabled = true;
-        btn.textContent = 'Connecting...';
-
+        btn.disabled = true; btn.textContent = 'Connecting...';
         try {
-            const response = await fetch('/integrations/binance/token', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({api_key: apiKey, api_secret: apiSecret}),
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Failed to connect');
-            }
+            const r = await fetch('/integrations/binance/token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({api_key: apiKey, api_secret: apiSecret}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
             showToast('Connected to Binance!', 'success');
             setTimeout(() => window.location.reload(), 1000);
-        } catch (error) {
-            errEl.textContent = error.message;
-            errEl.classList.remove('hidden');
-            showToast(error.message, 'error');
-            btn.disabled = false;
-            btn.textContent = 'Connect';
-        }
+        } catch (e) { errEl.textContent = e.message; errEl.classList.remove('hidden'); btn.disabled = false; btn.textContent = 'Connect'; }
     }
 </script>
 {% endblock %}

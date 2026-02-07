@@ -29,7 +29,15 @@ from app.config.store import (
     TELEGRAM_API_HASH_KEY,
     get_setting_value,
 )
-from app.integrations.connections import get_user_connections
+from app.integrations.connections import get_user_connections, delete_connection
+from app.integrations.user_integrations import (
+    get_user_integrations,
+    add_user_integration,
+    remove_user_integration,
+    toggle_user_integration,
+    ensure_memory_integration,
+)
+from app.integrations.custom_servers import get_user_custom_servers
 
 
 router = APIRouter(tags=["ui"])
@@ -53,25 +61,64 @@ async def home(request: Request, user: Optional[User] = Depends(get_current_user
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    integrations = [i for i in integration_registry.list_all() if i.name != "memory"]
-
     with get_db() as conn:
+        ensure_memory_integration(conn, user.id)
+        user_intgs = get_user_integrations(conn, user.id)
         connections = get_user_connections(conn, user.id)
+        custom_servers = get_user_custom_servers(conn, user.id)
 
-    integration_data = []
-    for integration in integrations:
-        connection = connections.get(integration.name)
+    user_provider_set = {ui["provider"] for ui in user_intgs}
+    all_integrations = [i for i in integration_registry.list_all() if i.name != "memory"]
+
+    # Build "My Integrations" list
+    my_integrations = []
+    for ui_row in user_intgs:
+        provider = ui_row["provider"]
+        if provider == "memory":
+            continue
+        integration = integration_registry.get(provider)
+        if not integration:
+            continue
+        connection = connections.get(provider)
         meta = None
         if connection and connection.get("meta_json"):
             meta = json.loads(connection["meta_json"])
-
-        integration_data.append({
-            "name": integration.name,
+        my_integrations.append({
+            "name": provider,
             "display_name": integration.display_name,
             "description": integration.description,
             "is_configured": integration.is_configured(),
             "is_connected": connection is not None,
+            "is_enabled": bool(ui_row["is_enabled"]),
             "meta": meta,
+        })
+
+    # Build catalog (integrations NOT in user's dashboard)
+    catalog = []
+    for integration in all_integrations:
+        if integration.name in user_provider_set:
+            continue
+        catalog.append({
+            "name": integration.name,
+            "display_name": integration.display_name,
+            "description": integration.description,
+            "is_configured": integration.is_configured(),
+        })
+
+    # Custom servers
+    custom_servers_data = []
+    for server in custom_servers:
+        tools = json.loads(server["tools_cache_json"]) if server.get("tools_cache_json") else []
+        custom_servers_data.append({
+            "id": server["id"],
+            "slug": server["slug"],
+            "display_name": server["display_name"],
+            "server_url": server["server_url"],
+            "auth_type": server["auth_type"],
+            "is_enabled": bool(server["is_enabled"]),
+            "health_status": server["health_status"],
+            "tools_count": len(tools),
+            "last_health_check": server.get("last_health_check"),
         })
 
     return templates.TemplateResponse(
@@ -80,7 +127,9 @@ async def home(request: Request, user: Optional[User] = Depends(get_current_user
         {
             "user": {"email": user.email, "role": user.role.value},
             "active_page": "integrations",
-            "integrations": integration_data,
+            "my_integrations": my_integrations,
+            "catalog": catalog,
+            "custom_servers": custom_servers_data,
         },
     )
 
@@ -185,12 +234,14 @@ async def signup_submit(
             )
 
         password_hash = hash_password(password)
-        conn.execute(
+        cursor = conn.execute(
             """INSERT INTO users (email, password_hash, role, status)
                VALUES (?, ?, ?, ?)""",
             (email, password_hash, UserRole.USER.value, UserStatus.PENDING.value),
         )
         conn.commit()
+        new_user_id = cursor.lastrowid
+        ensure_memory_integration(conn, new_user_id)
 
     return templates.TemplateResponse(
         request,
@@ -230,6 +281,30 @@ async def disconnect_integration_ui(
         url=f"/?success=disconnected&provider={provider_label}",
         status_code=status.HTTP_302_FOUND,
     )
+
+
+@router.post("/dashboard/{provider}/add")
+async def add_to_dashboard_ui(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+):
+    integration = integration_registry.get(provider)
+    if not integration:
+        raise HTTPException(status_code=404, detail="Integration not found")
+    with get_db() as conn:
+        add_user_integration(conn, current_user.id, provider)
+    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/dashboard/{provider}/remove")
+async def remove_from_dashboard_ui(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        remove_user_integration(conn, current_user.id, provider)
+        delete_connection(conn, current_user.id, provider)
+    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/admin/users", response_class=HTMLResponse)

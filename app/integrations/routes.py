@@ -15,6 +15,25 @@ from app.integrations.registry import integration_registry
 from app.config.store import get_public_base_url
 from app.integrations.connections import get_user_connections, save_connection, delete_connection
 from app.mcp_gateway.audit import log_tool_call
+from app.integrations.user_integrations import (
+    add_user_integration,
+    remove_user_integration,
+    toggle_user_integration,
+    is_integration_added,
+)
+from app.integrations.custom_servers import (
+    get_user_custom_servers,
+    get_custom_server_by_id,
+    add_custom_server,
+    delete_custom_server,
+    toggle_custom_server,
+    update_tools_cache,
+    update_health_status,
+    decrypt_server_auth_secret,
+    slugify,
+    RESERVED_SLUGS,
+)
+from app.integrations.mcp_proxy import MCPProxyClient
 
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
@@ -336,6 +355,8 @@ async def oauth_callback(
                 expires_at=expires_at,
                 meta=token_data.get("meta"),
             )
+            # Auto-add to user's dashboard when connecting
+            add_user_integration(conn, state_data["user_id"], provider)
 
         safe_audit_log(
             user_id=state_data["user_id"],
@@ -429,6 +450,7 @@ async def figma_token_connect(
             scope=None,
             meta=meta,
         )
+        add_user_integration(conn, current_user.id, "figma")
 
     safe_audit_log(
         user_id=current_user.id,
@@ -578,6 +600,7 @@ async def binance_token_connect(
             scope=None,
             meta=meta,
         )
+        add_user_integration(conn, current_user.id, "binance")
 
     safe_audit_log(
         user_id=current_user.id,
@@ -660,6 +683,7 @@ async def telegram_verify(
             scope=None,
             meta=result.get("meta"),
         )
+        add_user_integration(conn, current_user.id, "telegram")
 
     safe_audit_log(
         user_id=current_user.id,
@@ -710,6 +734,7 @@ async def telegram_password(
             scope=None,
             meta=result.get("meta"),
         )
+        add_user_integration(conn, current_user.id, "telegram")
 
     safe_audit_log(
         user_id=current_user.id,
@@ -721,3 +746,179 @@ async def telegram_password(
     )
 
     return {"connected": True}
+
+
+# ── Dashboard management ─────────────────────────────────────────────
+
+
+class AddIntegrationRequest(BaseModel):
+    provider: str
+
+
+class ToggleIntegrationRequest(BaseModel):
+    is_enabled: bool
+
+
+@router.post("/dashboard/add")
+async def add_integration_to_dashboard(
+    data: AddIntegrationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    integration = integration_registry.get(data.provider)
+    if not integration:
+        raise HTTPException(status_code=404, detail="Integration not found")
+
+    with get_db() as conn:
+        add_user_integration(conn, current_user.id, data.provider)
+
+    return {"message": f"Added {integration.display_name}"}
+
+
+@router.post("/dashboard/{provider}/remove")
+async def remove_integration_from_dashboard(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        remove_user_integration(conn, current_user.id, provider)
+        delete_connection(conn, current_user.id, provider)
+
+    return {"message": "Removed"}
+
+
+@router.post("/dashboard/{provider}/toggle")
+async def toggle_integration_visibility(
+    provider: str,
+    data: ToggleIntegrationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        toggle_user_integration(conn, current_user.id, provider, data.is_enabled)
+
+    return {"message": "Toggled", "is_enabled": data.is_enabled}
+
+
+# ── Custom MCP servers ───────────────────────────────────────────────
+
+
+class AddCustomServerRequest(BaseModel):
+    display_name: str
+    server_url: str
+    auth_type: str = "none"
+    auth_secret: Optional[str] = None
+    auth_header_name: Optional[str] = None
+
+
+@router.post("/custom-servers")
+async def add_custom_server_endpoint(
+    data: AddCustomServerRequest,
+    current_user: User = Depends(get_current_user),
+):
+    slug = slugify(data.display_name)
+    if not slug:
+        raise HTTPException(status_code=400, detail="Invalid display name")
+    if slug in RESERVED_SLUGS:
+        raise HTTPException(status_code=400, detail=f"Name '{slug}' is reserved")
+
+    proxy = MCPProxyClient(
+        server_url=data.server_url,
+        auth_type=data.auth_type,
+        auth_secret=data.auth_secret,
+        auth_header_name=data.auth_header_name,
+        timeout=15.0,
+    )
+
+    try:
+        await proxy.initialize()
+        tools = await proxy.list_tools()
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to connect to MCP server: {e}",
+        )
+
+    with get_db() as conn:
+        server_id = add_custom_server(
+            conn,
+            user_id=current_user.id,
+            slug=slug,
+            display_name=data.display_name,
+            server_url=data.server_url,
+            auth_type=data.auth_type,
+            auth_secret=data.auth_secret,
+            auth_header_name=data.auth_header_name,
+        )
+        update_tools_cache(conn, server_id, json.dumps(tools, default=str))
+        update_health_status(conn, server_id, "healthy")
+
+    return {"id": server_id, "slug": slug, "tools_count": len(tools), "tools": tools}
+
+
+@router.get("/custom-servers")
+async def list_custom_servers_endpoint(
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        servers = get_user_custom_servers(conn, current_user.id)
+    return {"servers": servers}
+
+
+@router.delete("/custom-servers/{server_id}")
+async def delete_custom_server_endpoint(
+    server_id: int,
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        server = get_custom_server_by_id(conn, server_id, current_user.id)
+        if not server:
+            raise HTTPException(status_code=404, detail="Server not found")
+        delete_custom_server(conn, server_id, current_user.id)
+
+    return {"message": "Deleted"}
+
+
+@router.post("/custom-servers/{server_id}/toggle")
+async def toggle_custom_server_endpoint(
+    server_id: int,
+    data: ToggleIntegrationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        server = get_custom_server_by_id(conn, server_id, current_user.id)
+        if not server:
+            raise HTTPException(status_code=404, detail="Server not found")
+        toggle_custom_server(conn, server_id, current_user.id, data.is_enabled)
+
+    return {"message": "Toggled", "is_enabled": data.is_enabled}
+
+
+@router.post("/custom-servers/{server_id}/refresh")
+async def refresh_custom_server_endpoint(
+    server_id: int,
+    current_user: User = Depends(get_current_user),
+):
+    with get_db() as conn:
+        server = get_custom_server_by_id(conn, server_id, current_user.id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    auth_secret = decrypt_server_auth_secret(server)
+    proxy = MCPProxyClient(
+        server_url=server["server_url"],
+        auth_type=server["auth_type"],
+        auth_secret=auth_secret,
+        auth_header_name=server.get("auth_header_name"),
+        timeout=15.0,
+    )
+
+    try:
+        await proxy.initialize()
+        tools = await proxy.list_tools()
+        with get_db() as conn:
+            update_tools_cache(conn, server_id, json.dumps(tools, default=str))
+            update_health_status(conn, server_id, "healthy")
+        return {"status": "healthy", "tools_count": len(tools), "tools": tools}
+    except Exception as e:
+        with get_db() as conn:
+            update_health_status(conn, server_id, "unhealthy")
+        raise HTTPException(status_code=400, detail=f"Health check failed: {e}")

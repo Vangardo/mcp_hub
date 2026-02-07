@@ -11,6 +11,7 @@ from app.integrations.connections import (
     decrypt_connection_secret,
     decrypt_connection_refresh_secret,
 )
+from app.integrations.user_integrations import get_user_enabled_providers
 
 
 def update_connection_tokens(
@@ -99,6 +100,12 @@ async def execute_tool(
         provider, full_tool_name = parse_tool_name(tool_name)
     except ValueError as e:
         return ToolResult(success=False, error=str(e))
+
+    # Check that integration is enabled for this user
+    with get_db() as conn:
+        enabled = get_user_enabled_providers(conn, user_id)
+    if provider not in enabled:
+        return ToolResult(success=False, error=f"Integration '{provider}' is not enabled")
 
     integration = integration_registry.get(provider)
     if not integration:
