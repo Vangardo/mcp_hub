@@ -489,27 +489,27 @@ async def dashboard_stats_api(
 async def admin_dashboard_stats_api(
     admin: User = Depends(require_admin),
     period: str = Query("7d"),
+    user_id: Optional[int] = Query(None),
 ):
     if period not in ("24h", "7d", "30d", "all"):
         period = "7d"
     with get_db() as conn:
-        data = _build_dashboard_stats(conn, period, user_id=None, is_admin=True)
+        data = _build_dashboard_stats(conn, period, user_id=user_id, is_admin=True)
     return JSONResponse(content=data)
 
 
-@router.get("/admin/dashboard", response_class=HTMLResponse)
-async def admin_dashboard_page(
-    request: Request,
-    admin: User = Depends(require_admin),
-):
-    return templates.TemplateResponse(
-        request,
-        "admin/dashboard.html",
-        {
-            "user": {"email": admin.email, "role": admin.role.value},
-            "active_page": "admin_dashboard",
-        },
-    )
+@router.get("/api/admin/users/list")
+async def admin_users_list_api(admin: User = Depends(require_admin)):
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, email FROM users WHERE status = 'approved' ORDER BY email"
+        ).fetchall()
+    return JSONResponse(content=[{"id": r["id"], "email": r["email"]} for r in rows])
+
+
+@router.get("/admin/dashboard")
+async def admin_dashboard_redirect():
+    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
 
 @router.post("/dashboard/{provider}/add")
@@ -682,39 +682,46 @@ async def admin_audit_page(
     )
 
 
-@router.get("/admin/settings", response_class=HTMLResponse)
-async def admin_settings_page(
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(
     request: Request,
-    admin: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
-    settings_data = {
-        "public_base_url": get_setting_value(PUBLIC_BASE_URL_KEY),
-        "public_host": get_setting_value(PUBLIC_HOST_KEY),
-        "teamwork_client_id": get_setting_value(TEAMWORK_CLIENT_ID_KEY),
-        "teamwork_client_secret": get_setting_value(TEAMWORK_CLIENT_SECRET_KEY),
-        "slack_client_id": get_setting_value(SLACK_CLIENT_ID_KEY),
-        "slack_client_secret": get_setting_value(SLACK_CLIENT_SECRET_KEY),
-        "miro_client_id": get_setting_value(MIRO_CLIENT_ID_KEY),
-        "miro_client_secret": get_setting_value(MIRO_CLIENT_SECRET_KEY),
-        "figma_client_id": get_setting_value(FIGMA_CLIENT_ID_KEY),
-        "figma_client_secret": get_setting_value(FIGMA_CLIENT_SECRET_KEY),
-        "telegram_api_id": get_setting_value(TELEGRAM_API_ID_KEY),
-        "telegram_api_hash": get_setting_value(TELEGRAM_API_HASH_KEY),
-    }
-
     from app.config.store import get_public_base_url
     base_url = get_public_base_url()
 
+    settings_data = {}
+    if current_user.role.value == "admin":
+        settings_data = {
+            "public_base_url": get_setting_value(PUBLIC_BASE_URL_KEY),
+            "public_host": get_setting_value(PUBLIC_HOST_KEY),
+            "teamwork_client_id": get_setting_value(TEAMWORK_CLIENT_ID_KEY),
+            "teamwork_client_secret": get_setting_value(TEAMWORK_CLIENT_SECRET_KEY),
+            "slack_client_id": get_setting_value(SLACK_CLIENT_ID_KEY),
+            "slack_client_secret": get_setting_value(SLACK_CLIENT_SECRET_KEY),
+            "miro_client_id": get_setting_value(MIRO_CLIENT_ID_KEY),
+            "miro_client_secret": get_setting_value(MIRO_CLIENT_SECRET_KEY),
+            "figma_client_id": get_setting_value(FIGMA_CLIENT_ID_KEY),
+            "figma_client_secret": get_setting_value(FIGMA_CLIENT_SECRET_KEY),
+            "telegram_api_id": get_setting_value(TELEGRAM_API_ID_KEY),
+            "telegram_api_hash": get_setting_value(TELEGRAM_API_HASH_KEY),
+        }
+
     return templates.TemplateResponse(
         request,
-        "admin/settings.html",
+        "settings.html",
         {
-            "user": {"email": admin.email, "role": admin.role.value},
+            "user": {"email": current_user.email, "role": current_user.role.value},
             "active_page": "settings",
             "settings": settings_data,
             "base_url": base_url,
         },
     )
+
+
+@router.get("/admin/settings")
+async def admin_settings_redirect():
+    return RedirectResponse(url="/settings", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/memory", response_class=HTMLResponse)

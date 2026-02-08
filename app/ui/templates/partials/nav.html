@@ -3,10 +3,9 @@
     'integrations': 'Integrations',
     'memory': 'Memory',
     'account': 'Account',
-    'admin_dashboard': 'System Dashboard',
+    'settings': 'Settings',
     'users': 'User Management',
-    'audit': 'Audit Log',
-    'settings': 'Settings'
+    'audit': 'Audit Log'
 } %}
 
 <!-- Mobile sidebar backdrop -->
@@ -60,20 +59,21 @@
             <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Account</span>
         </a>
 
+        <a href="/settings" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'settings' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Settings</span>
+        </a>
+
         {% if user.role == 'admin' %}
         <!-- Admin separator -->
         <div class="pt-3 mt-3 border-t border-slate-200">
             <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400
                       md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Admin</p>
         </div>
-
-        <a href="/admin/dashboard" class="flex items-center h-10 px-3 rounded-lg transition-colors
-                          {% if active_page == 'admin_dashboard' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-            </svg>
-            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">System</span>
-        </a>
 
         <a href="/admin/users" class="flex items-center h-10 px-3 rounded-lg transition-colors
                           {% if active_page == 'users' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
@@ -89,15 +89,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
             <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Audit</span>
-        </a>
-
-        <a href="/admin/settings" class="flex items-center h-10 px-3 rounded-lg transition-colors
-                          {% if active_page == 'settings' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Settings</span>
         </a>
         {% endif %}
     </nav>

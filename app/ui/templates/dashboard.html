@@ -5,19 +5,42 @@
 {% block content %}
 <div class="space-y-6">
 
-    <!-- Header + Period Filter -->
+    <!-- Header Row -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
-            <p class="mt-1 text-sm text-slate-500">Your MCP activity overview</p>
+            <p class="mt-1 text-sm text-slate-500" id="dashboard-subtitle">Your MCP activity overview</p>
         </div>
-        <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm overflow-x-auto" id="period-filter">
-            <button data-period="24h" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">24h</button>
-            <button data-period="7d" class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700 whitespace-nowrap transition-all">7 days</button>
-            <button data-period="30d" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">30 days</button>
-            <button data-period="all" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">All time</button>
+        <div class="flex flex-wrap items-center gap-3">
+            {% if user.role == 'admin' %}
+            <!-- User filter (shown in system mode) -->
+            <select id="user-filter" class="hidden h-10 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 max-w-[200px]">
+                <option value="">All Users</option>
+            </select>
+            {% endif %}
+            <!-- Period filter -->
+            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm overflow-x-auto" id="period-filter">
+                <button data-period="24h" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">24h</button>
+                <button data-period="7d" class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700 whitespace-nowrap transition-all">7 days</button>
+                <button data-period="30d" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">30 days</button>
+                <button data-period="all" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">All time</button>
+            </div>
         </div>
     </div>
+
+    {% if user.role == 'admin' %}
+    <!-- Tab Bar -->
+    <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" id="tab-bar">
+        <button data-tab="personal" class="px-5 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700 whitespace-nowrap transition-all">
+            <svg class="w-4 h-4 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Personal
+        </button>
+        <button data-tab="system" class="px-5 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">
+            <svg class="w-4 h-4 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            System
+        </button>
+    </div>
+    {% endif %}
 
     <!-- Loading -->
     <div id="dashboard-loading" class="flex flex-col items-center justify-center py-20">
@@ -96,8 +119,6 @@
 
         <!-- Charts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            <!-- Activity Timeline -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-sm font-semibold text-slate-900">Activity Timeline</h3>
@@ -105,13 +126,12 @@
                 </div>
                 <div class="relative" style="height: 300px;">
                     <canvas id="chart-timeline"></canvas>
-                </div>
-                <div id="timeline-empty" class="hidden absolute inset-0 flex items-center justify-center">
-                    <p class="text-sm text-slate-400">No activity data for this period</p>
+                    <div id="timeline-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                        <p class="text-sm text-slate-400">No activity data</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Provider Usage -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-sm font-semibold text-slate-900">Provider Usage</h3>
@@ -125,7 +145,6 @@
                 </div>
             </div>
 
-            <!-- Success vs Errors -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-sm font-semibold text-slate-900">Success vs Errors</h3>
@@ -139,7 +158,6 @@
                 </div>
             </div>
 
-            <!-- Top Tools -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-sm font-semibold text-slate-900">Top Tools</h3>
@@ -152,11 +170,38 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!-- Extra Admin Charts Slot -->
-        <div id="admin-charts-row" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+        <!-- Admin-Only: Active Users + Top Users -->
+        <div id="admin-charts-section" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-slate-900">Active Users</h3>
+                        <span class="text-xs text-slate-400">Unique users over time</span>
+                    </div>
+                    <div class="relative" style="height: 300px;">
+                        <canvas id="chart-active-users"></canvas>
+                        <div id="active-users-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                            <p class="text-sm text-slate-400">No user activity data</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-slate-900">Top Users</h3>
+                        <span class="text-xs text-slate-400">Most active</span>
+                    </div>
+                    <div class="relative" style="height: 300px;">
+                        <canvas id="chart-top-users"></canvas>
+                        <div id="top-users-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                            <p class="text-sm text-slate-400">No user data</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Memory Quick Card -->
         <div class="bg-gradient-to-r from-indigo-50 via-white to-purple-50 rounded-xl shadow-sm border border-slate-200 p-5">
@@ -184,9 +229,11 @@
 {% block scripts %}
 <script>
     // ── State ────────────────────────────────────────────────────
+    const IS_ADMIN = {{ 'true' if user.role == 'admin' else 'false' }};
+    let currentTab = 'personal';
     let currentPeriod = '7d';
+    let selectedUserId = '';
     const charts = {};
-    const API_URL = '/api/dashboard/stats';
 
     // ── Chart.js defaults ────────────────────────────────────────
     Chart.defaults.font.family = "'Fira Sans', sans-serif";
@@ -194,6 +241,53 @@
     Chart.defaults.color = '#64748b';
     Chart.defaults.plugins.tooltip.cornerRadius = 8;
     Chart.defaults.plugins.tooltip.padding = 10;
+
+    // ── Tab switching (admin only) ──────────────────────────────
+    if (IS_ADMIN) {
+        const tabBar = document.getElementById('tab-bar');
+        const userFilter = document.getElementById('user-filter');
+
+        tabBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-tab]');
+            if (!btn) return;
+            currentTab = btn.dataset.tab;
+            tabBar.querySelectorAll('button').forEach(b => {
+                b.classList.remove('bg-primary-100', 'text-primary-700');
+                b.classList.add('text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+            });
+            btn.classList.add('bg-primary-100', 'text-primary-700');
+            btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+
+            if (currentTab === 'system') {
+                userFilter.classList.remove('hidden');
+                document.getElementById('admin-charts-section').classList.remove('hidden');
+                document.getElementById('dashboard-subtitle').textContent = selectedUserId ? 'Filtered by user' : 'Activity across all users';
+            } else {
+                userFilter.classList.add('hidden');
+                document.getElementById('admin-charts-section').classList.add('hidden');
+                document.getElementById('dashboard-subtitle').textContent = 'Your MCP activity overview';
+            }
+            loadDashboard();
+        });
+
+        userFilter.addEventListener('change', () => {
+            selectedUserId = userFilter.value;
+            document.getElementById('dashboard-subtitle').textContent = selectedUserId
+                ? `Filtered: ${userFilter.options[userFilter.selectedIndex].text}`
+                : 'Activity across all users';
+            loadDashboard();
+        });
+
+        // Load users for filter dropdown
+        fetch('/api/admin/users/list').then(r => r.json()).then(users => {
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.email;
+                userFilter.appendChild(opt);
+            });
+        });
+    }
 
     // ── Period filter ────────────────────────────────────────────
     const periodFilter = document.getElementById('period-filter');
@@ -212,8 +306,16 @@
 
     // ── Load ─────────────────────────────────────────────────────
     async function loadDashboard() {
+        let url;
+        if (currentTab === 'system' && IS_ADMIN) {
+            url = `/api/admin/dashboard/stats?period=${currentPeriod}`;
+            if (selectedUserId) url += `&user_id=${selectedUserId}`;
+        } else {
+            url = `/api/dashboard/stats?period=${currentPeriod}`;
+        }
+
         try {
-            const resp = await fetch(`${API_URL}?period=${currentPeriod}`);
+            const resp = await fetch(url);
             if (!resp.ok) throw new Error('Failed');
             const data = await resp.json();
 
@@ -227,7 +329,10 @@
             updateTopTools(data.top_tools);
             updateMemory(data.memory);
 
-            if (typeof updateAdminCharts === 'function') updateAdminCharts(data);
+            if (currentTab === 'system' && IS_ADMIN) {
+                if (data.active_users) updateActiveUsers(data.active_users);
+                if (data.top_users) updateTopUsers(data.top_users);
+            }
         } catch (e) {
             showToast('Failed to load dashboard data', 'error');
         }
@@ -266,14 +371,11 @@
 
     function formatLabel(label) {
         if (!label) return '';
-        // For hourly: show just HH:00
         if (label.length > 13 && label.includes(' ')) return label.split(' ')[1] || label;
-        // For daily: show Mon DD
         if (label.length === 10) {
             const d = new Date(label + 'T00:00:00');
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
-        // For monthly: show Jan 2025
         if (label.length === 7) {
             const [y, m] = label.split('-');
             const d = new Date(parseInt(y), parseInt(m) - 1);
@@ -294,43 +396,14 @@
             data: {
                 labels: data.labels.map(formatLabel),
                 datasets: [
-                    {
-                        label: 'Success',
-                        data: data.ok,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 2.5,
-                        pointRadius: 0,
-                        pointHoverRadius: 5,
-                        pointHoverBackgroundColor: '#10b981',
-                    },
-                    {
-                        label: 'Errors',
-                        data: data.error,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 2.5,
-                        pointRadius: 0,
-                        pointHoverRadius: 5,
-                        pointHoverBackgroundColor: '#ef4444',
-                    },
+                    { label: 'Success', data: data.ok, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.08)', fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#10b981' },
+                    { label: 'Errors', data: data.error, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.08)', fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#ef4444' },
                 ],
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, padding: 16 } },
-                    tooltip: { mode: 'index', intersect: false },
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
-                    x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } },
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, padding: 16 } }, tooltip: { mode: 'index', intersect: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } } },
                 interaction: { mode: 'index', intersect: false },
             },
         });
@@ -348,21 +421,11 @@
             type: 'doughnut',
             data: {
                 labels: data.labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
-                datasets: [{
-                    data: data.values,
-                    backgroundColor: data.colors,
-                    borderWidth: 3,
-                    borderColor: '#ffffff',
-                    hoverOffset: 6,
-                }],
+                datasets: [{ data: data.values, backgroundColor: data.colors, borderWidth: 3, borderColor: '#ffffff', hoverOffset: 6 }],
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { size: 12 } } },
-                },
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { size: 12 } } } },
             },
         });
     }
@@ -384,15 +447,9 @@
                 ],
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, padding: 16 } },
-                },
-                scales: {
-                    x: { stacked: true, grid: { display: false } },
-                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, padding: 16 } } },
+                scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } } },
             },
         });
     }
@@ -406,30 +463,61 @@
 
         const gradient = document.getElementById('chart-tools').getContext('2d');
         const g = gradient.createLinearGradient(0, 0, 400, 0);
-        g.addColorStop(0, '#6366f1');
-        g.addColorStop(1, '#8b5cf6');
+        g.addColorStop(0, '#6366f1'); g.addColorStop(1, '#8b5cf6');
 
         charts.tools = new Chart(document.getElementById('chart-tools'), {
             type: 'bar',
+            data: { labels: data.labels, datasets: [{ label: 'Calls', data: data.values, backgroundColor: g, borderRadius: 6, borderSkipped: false }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false }, ticks: { font: { family: "'Fira Code', monospace", size: 11 } } } },
+            },
+        });
+    }
+
+    // ── Admin Charts ─────────────────────────────────────────────
+    function updateActiveUsers(data) {
+        destroyChart('activeUsers');
+        const el = document.getElementById('active-users-empty');
+        if (!data.labels.length) { el.classList.remove('hidden'); return; }
+        el.classList.add('hidden');
+
+        charts.activeUsers = new Chart(document.getElementById('chart-active-users'), {
+            type: 'line',
             data: {
-                labels: data.labels,
+                labels: data.labels.map(formatLabel),
                 datasets: [{
-                    label: 'Calls',
-                    data: data.values,
-                    backgroundColor: g,
-                    borderRadius: 6,
-                    borderSkipped: false,
+                    label: 'Unique Users', data: data.values, borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.08)', fill: true, tension: 0.4,
+                    borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#8b5cf6',
                 }],
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } } },
+            },
+        });
+    }
+
+    function updateTopUsers(data) {
+        destroyChart('topUsers');
+        const el = document.getElementById('top-users-empty');
+        if (!data.labels.length) { el.classList.remove('hidden'); return; }
+        el.classList.add('hidden');
+
+        const gradient = document.getElementById('chart-top-users').getContext('2d');
+        const g = gradient.createLinearGradient(0, 0, 400, 0);
+        g.addColorStop(0, '#8b5cf6'); g.addColorStop(1, '#a78bfa');
+
+        charts.topUsers = new Chart(document.getElementById('chart-top-users'), {
+            type: 'bar',
+            data: { labels: data.labels, datasets: [{ label: 'Calls', data: data.values, backgroundColor: g, borderRadius: 6, borderSkipped: false }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
                 plugins: { legend: { display: false } },
-                scales: {
-                    x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
-                    y: { grid: { display: false }, ticks: { font: { family: "'Fira Code', monospace", size: 11 } } },
-                },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false } } },
             },
         });
     }

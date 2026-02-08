@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - MCP Hub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">Settings</h1>
+        <p class="mt-1 text-sm text-slate-500">Connection config and preferences</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" id="settings-tabs">
+        <button data-tab="connection" class="px-5 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700 whitespace-nowrap transition-all">
+            <svg class="w-4 h-4 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            Connection
+        </button>
+        {% if user.role == 'admin' %}
+        <button data-tab="server" class="px-5 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">
+            <svg class="w-4 h-4 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+            Server
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Connection Tab -->
+    <div id="tab-connection" class="space-y-6">
+        <!-- MCP Endpoint -->
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">MCP Endpoint</h2>
+            <p class="text-sm text-slate-500">Use this URL to connect your AI assistant (Claude, Cursor, ChatGPT) to MCP Hub.</p>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Server URL</label>
+                <div class="flex items-center gap-2">
+                    <input id="mcp-endpoint-url" type="text" readonly value="{{ base_url }}/mcp"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-900 font-mono text-sm">
+                    <button type="button" onclick="copyText('mcp-endpoint-url')" class="px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAT Tokens -->
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Personal Access Tokens</h2>
+            <p class="text-sm text-slate-500">Long-lived tokens for authenticating MCP connections (Claude Desktop, Cursor, etc.)</p>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="pat-display" readonly placeholder="Generate a token to see it here"
+                       class="flex-1 px-3 py-2.5 border border-slate-300 rounded-lg bg-slate-50 font-mono text-sm">
+                <button type="button" onclick="generatePAT()"
+                        class="px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap">
+                    Generate New Token
+                </button>
+            </div>
+            <p id="pat-note" class="text-xs text-slate-500"></p>
+        </div>
+
+        <!-- Quick Config Snippet -->
+        <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Quick Config</h2>
+                    <p class="text-sm text-slate-500">JSON config snippet for your MCP client</p>
+                </div>
+                <button onclick="copyConfig()" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Copy
+                </button>
+            </div>
+            <pre id="config-snippet" class="bg-slate-900 text-emerald-400 p-4 rounded-lg text-xs sm:text-sm overflow-x-auto font-mono max-h-48 overflow-y-auto"></pre>
+        </div>
+    </div>
+
+    {% if user.role == 'admin' %}
+    <!-- Server Tab (Admin Only) -->
+    <div id="tab-server" class="hidden">
+        <form id="admin-settings-form" class="space-y-6">
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+                <h2 class="text-lg font-semibold text-slate-900">Public URL</h2>
+                <p class="text-sm text-slate-500">Used to build the MCP endpoint URL and OAuth redirect URIs.</p>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Public Base URL</label>
+                    <input type="text" name="public_base_url" placeholder="https://mcp.example.com"
+                           value="{{ settings.public_base_url or '' }}"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <p class="mt-1 text-xs text-slate-500">Include scheme and port if needed.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Public Host (optional)</label>
+                    <input type="text" name="public_host" placeholder="mcp.example.com"
+                           value="{{ settings.public_host or '' }}"
+                           class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <p class="mt-1 text-xs text-slate-500">Used only if Public Base URL is empty.</p>
+                </div>
+            </div>
+
+            <!-- Teamwork -->
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">Teamwork OAuth</h2>
+                    <a href="https://developer.teamwork.com/" target="_blank" rel="noopener" class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                        Create App <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-3 space-y-1">
+                    <p class="text-xs text-slate-600">Redirect URI:</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/teamwork/callback</code>
+                        <button type="button" onclick="copyRedirectUri('teamwork')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label><input type="text" name="teamwork_client_id" value="{{ settings.teamwork_client_id or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label><input type="password" name="teamwork_client_secret" value="{{ settings.teamwork_client_secret or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                </div>
+            </div>
+
+            <!-- Slack -->
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">Slack OAuth</h2>
+                    <a href="https://api.slack.com/apps" target="_blank" rel="noopener" class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">
+                        Create App <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-3">
+                    <p class="text-xs text-slate-600">Redirect URI:</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/slack/callback</code>
+                        <button type="button" onclick="copyRedirectUri('slack')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label><input type="text" name="slack_client_id" value="{{ settings.slack_client_id or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label><input type="password" name="slack_client_secret" value="{{ settings.slack_client_secret or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                </div>
+            </div>
+
+            <!-- Miro -->
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">Miro OAuth</h2>
+                    <a href="https://miro.com/app/settings/user-profile/apps" target="_blank" rel="noopener" class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">Create App <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-3">
+                    <p class="text-xs text-slate-600">Redirect URI:</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/miro/callback</code>
+                        <button type="button" onclick="copyRedirectUri('miro')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label><input type="text" name="miro_client_id" value="{{ settings.miro_client_id or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label><input type="password" name="miro_client_secret" value="{{ settings.miro_client_secret or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                </div>
+            </div>
+
+            <!-- Figma -->
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">Figma OAuth</h2>
+                    <a href="https://www.figma.com/developers/apps" target="_blank" rel="noopener" class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">Create App <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-3">
+                    <p class="text-xs text-slate-600">Callback URL:</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <code class="text-xs bg-white border border-slate-200 rounded px-2 py-1 flex-1 overflow-x-auto">{{ base_url }}/oauth/figma/callback</code>
+                        <button type="button" onclick="copyRedirectUri('figma')" class="text-xs text-primary-600 hover:text-primary-800 whitespace-nowrap">Copy</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client ID</label><input type="text" name="figma_client_id" value="{{ settings.figma_client_id or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Client Secret</label><input type="password" name="figma_client_secret" value="{{ settings.figma_client_secret or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                </div>
+            </div>
+
+            <!-- Telegram -->
+            <div class="bg-white shadow-sm rounded-xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">Telegram (MTProto)</h2>
+                    <a href="https://my.telegram.org/apps" target="_blank" rel="noopener" class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">Create App <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-3">
+                    <p class="text-xs text-slate-500 italic">No redirect URI needed — session-based auth</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">API ID</label><input type="text" name="telegram_api_id" value="{{ settings.telegram_api_id or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">API Hash</label><input type="password" name="telegram_api_hash" value="{{ settings.telegram_api_hash or '' }}" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="inline-flex items-center px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                Save Settings
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const baseUrl = {{ base_url | tojson }};
+
+    // ── Tab switching ────────────────────────────────────────────
+    const settingsTabs = document.getElementById('settings-tabs');
+    settingsTabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-tab]');
+        if (!btn) return;
+        const tab = btn.dataset.tab;
+
+        settingsTabs.querySelectorAll('button').forEach(b => {
+            b.classList.remove('bg-primary-100', 'text-primary-700');
+            b.classList.add('text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+        });
+        btn.classList.add('bg-primary-100', 'text-primary-700');
+        btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+
+        document.querySelectorAll('[id^="tab-"]').forEach(el => {
+            if (el.id !== 'tab-bar') el.classList.add('hidden');
+        });
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+    });
+
+    // ── Copy helpers ─────────────────────────────────────────────
+    function copyText(id) {
+        const el = document.getElementById(id);
+        navigator.clipboard.writeText(el.value || el.textContent || '').then(() => showToast('Copied!', 'success')).catch(() => showToast('Failed', 'error'));
+    }
+
+    function copyRedirectUri(provider) {
+        navigator.clipboard.writeText(baseUrl + '/oauth/' + provider + '/callback').then(() => showToast('Redirect URI copied!', 'success')).catch(() => showToast('Failed', 'error'));
+    }
+
+    // ── Config snippet ───────────────────────────────────────────
+    const configSnippet = document.getElementById('config-snippet');
+    configSnippet.textContent = JSON.stringify({
+        mcpServers: {
+            "mcp-hub": {
+                url: baseUrl + '/mcp',
+                headers: { Authorization: 'Bearer <YOUR_TOKEN>' }
+            }
+        }
+    }, null, 2);
+
+    function copyConfig() {
+        navigator.clipboard.writeText(configSnippet.textContent).then(() => showToast('Config copied!', 'success')).catch(() => showToast('Failed', 'error'));
+    }
+
+    // ── PAT generation ───────────────────────────────────────────
+    async function generatePAT() {
+        try {
+            const r = await fetch('/auth/personal_token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({expires_days: 30}) });
+            if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Failed'); }
+            const d = await r.json();
+            document.getElementById('pat-display').value = d.token;
+            document.getElementById('pat-note').textContent = `Token generated. Expires: ${new Date(d.expires_at).toLocaleDateString()}`;
+
+            // Update config snippet with real token
+            configSnippet.textContent = JSON.stringify({
+                mcpServers: {
+                    "mcp-hub": {
+                        url: baseUrl + '/mcp',
+                        headers: { Authorization: `Bearer ${d.token}` }
+                    }
+                }
+            }, null, 2);
+
+            showToast('Token generated!', 'success');
+        } catch (e) { showToast(e.message, 'error'); }
+    }
+
+    // ── Admin settings form ──────────────────────────────────────
+    const adminForm = document.getElementById('admin-settings-form');
+    if (adminForm) {
+        adminForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Failed'); }
+                showToast('Settings saved', 'success');
+            } catch (error) { showToast(error.message, 'error'); }
+        });
+    }
+</script>
+{% endblock %}
