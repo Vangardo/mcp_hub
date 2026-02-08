@@ -6,6 +6,7 @@
     <title>{% block title %}MCP Hub{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="/static/MCP_hub.svg">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -77,7 +78,7 @@
         {% include "partials/nav.html" %}
         {% endif %}
 
-        <main class="fade-in">
+        <main class="fade-in {% if user %}pt-14 md:ml-16{% endif %}">
             <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                 {% block content %}{% endblock %}
             </div>

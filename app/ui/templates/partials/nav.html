@@ -1,175 +1,170 @@
-<nav class="bg-white shadow-sm border-b border-slate-200">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 justify-between">
-            <div class="flex">
-                <div class="flex flex-shrink-0 items-center">
-                    <a href="/" class="flex items-center space-x-2">
-                        <img src="/static/MCP_hub.svg" alt="MCP Hub" class="w-8 h-8 rounded-lg">
-                        <span class="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent hidden sm:block">MCP Hub</span>
-                    </a>
-                </div>
-                <!-- Desktop navigation -->
-                <div class="hidden md:ml-8 md:flex md:space-x-1">
-                    <a href="/" class="{% if active_page == 'integrations' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                        </svg>
-                        Integrations
-                    </a>
-                    <a href="/memory" class="{% if active_page == 'memory' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                        </svg>
-                        Memory
-                    </a>
-                    <a href="/account" class="{% if active_page == 'account' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.878 6.196 9 9 0 015.12 17.804zM15 11a3 3 0 11-6 0 3 3 0 016 0zM7 20a7 7 0 0110 0"/>
-                        </svg>
-                        Account
-                    </a>
-                    {% if user.role == 'admin' %}
-                    <a href="/admin/users" class="{% if active_page == 'users' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
-                        Users
-                    </a>
-                    <a href="/admin/audit" class="{% if active_page == 'audit' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
-                        Audit
-                    </a>
-                    <a href="/admin/settings" class="{% if active_page == 'settings' %}bg-primary-50 text-primary-700 border-primary-200{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent{% endif %} inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        Settings
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
+{% set page_titles = {
+    'dashboard': 'Dashboard',
+    'integrations': 'Integrations',
+    'memory': 'Memory',
+    'account': 'Account',
+    'admin_dashboard': 'System Dashboard',
+    'users': 'User Management',
+    'audit': 'Audit Log',
+    'settings': 'Settings'
+} %}
 
-            <!-- Desktop user info -->
-            <div class="hidden md:flex items-center space-x-4">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium text-slate-600">{{ user.email[0]|upper }}</span>
-                    </div>
-                    <span class="text-sm text-slate-600">{{ user.email }}</span>
-                    {% if user.role == 'admin' %}
-                    <span class="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">Admin</span>
-                    {% endif %}
-                </div>
-                <form action="/logout" method="post" class="inline">
-                    <button type="submit" class="text-sm text-slate-500 hover:text-slate-700 flex items-center space-x-1 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                        </svg>
-                        <span>Logout</span>
-                    </button>
-                </form>
-            </div>
+<!-- Mobile sidebar backdrop -->
+<div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 hidden md:hidden" onclick="closeSidebar()"></div>
 
-            <!-- Mobile menu button -->
-            <div class="flex items-center md:hidden">
-                <button type="button" onclick="toggleMobileMenu()" class="inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors" aria-expanded="false">
-                    <span class="sr-only">Open main menu</span>
-                    <svg id="mobile-menu-icon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                    <svg id="mobile-menu-close-icon" class="hidden h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
+<!-- Sidebar -->
+<aside id="sidebar"
+       class="group fixed top-0 left-0 h-full bg-white border-r border-slate-200 z-40
+              flex flex-col transition-all duration-200 ease-in-out overflow-hidden
+              -translate-x-full md:translate-x-0
+              w-60 md:w-16 md:hover:w-60 md:hover:shadow-xl">
+
+    <!-- Logo -->
+    <div class="h-14 flex items-center px-4 border-b border-slate-200 flex-shrink-0">
+        <img src="/static/MCP_hub.svg" alt="MCP Hub" class="w-8 h-8 flex-shrink-0 rounded-lg">
+        <span class="ml-3 text-lg font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent whitespace-nowrap
+                     md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">MCP Hub</span>
     </div>
 
-    <!-- Mobile menu -->
-    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200">
-        <div class="px-4 py-3 space-y-1">
-            <a href="/" class="{% if active_page == 'integrations' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                </svg>
-                Integrations
-            </a>
-            <a href="/memory" class="{% if active_page == 'memory' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                </svg>
-                Memory
-            </a>
-            <a href="/account" class="{% if active_page == 'account' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.878 6.196 9 9 0 015.12 17.804zM15 11a3 3 0 11-6 0 3 3 0 016 0zM7 20a7 7 0 0110 0"/>
-                </svg>
-                Account
-            </a>
-            {% if user.role == 'admin' %}
-            <div class="border-t border-slate-200 pt-2 mt-2">
-                <p class="px-3 py-1 text-xs font-medium text-slate-400 uppercase">Admin</p>
-            </div>
-            <a href="/admin/users" class="{% if active_page == 'users' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-                Users
-            </a>
-            <a href="/admin/audit" class="{% if active_page == 'audit' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                Audit Log
-            </a>
-            <a href="/admin/settings" class="{% if active_page == 'settings' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-50{% endif %} flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                Settings
-            </a>
-            {% endif %}
+    <!-- Nav links -->
+    <nav class="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
+        <a href="/" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'dashboard' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Dashboard</span>
+        </a>
+
+        <a href="/integrations" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'integrations' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Integrations</span>
+        </a>
+
+        <a href="/memory" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'memory' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Memory</span>
+        </a>
+
+        <a href="/account" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'account' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.878 6.196 9 9 0 015.12 17.804zM15 11a3 3 0 11-6 0 3 3 0 016 0zM7 20a7 7 0 0110 0"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Account</span>
+        </a>
+
+        {% if user.role == 'admin' %}
+        <!-- Admin separator -->
+        <div class="pt-3 mt-3 border-t border-slate-200">
+            <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400
+                      md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Admin</p>
         </div>
 
-        <!-- Mobile user info -->
-        <div class="border-t border-slate-200 px-4 py-4">
-            <div class="flex items-center space-x-3 mb-3">
-                <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-                    <span class="text-sm font-medium text-slate-600">{{ user.email[0]|upper }}</span>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-900">{{ user.email }}</p>
-                    {% if user.role == 'admin' %}
-                    <span class="text-xs text-primary-600">Administrator</span>
-                    {% else %}
-                    <span class="text-xs text-slate-500">User</span>
-                    {% endif %}
-                </div>
+        <a href="/admin/dashboard" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'admin_dashboard' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">System</span>
+        </a>
+
+        <a href="/admin/users" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'users' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Users</span>
+        </a>
+
+        <a href="/admin/audit" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'audit' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Audit</span>
+        </a>
+
+        <a href="/admin/settings" class="flex items-center h-10 px-3 rounded-lg transition-colors
+                          {% if active_page == 'settings' %}bg-primary-50 text-primary-700{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Settings</span>
+        </a>
+        {% endif %}
+    </nav>
+
+    <!-- User section at bottom -->
+    <div class="flex-shrink-0 p-2 border-t border-slate-200">
+        <div class="flex items-center px-3 py-2 rounded-lg">
+            <div class="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-xs font-bold text-white">{{ user.email[0]|upper }}</span>
             </div>
-            <form action="/logout" method="post">
-                <button type="submit" class="w-full flex items-center justify-center px-4 py-2.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                    Sign out
-                </button>
-            </form>
+            <div class="ml-3 min-w-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                <p class="text-sm font-medium text-slate-700 truncate">{{ user.email }}</p>
+                {% if user.role == 'admin' %}
+                <span class="text-[10px] text-primary-600 font-medium">Administrator</span>
+                {% endif %}
+            </div>
         </div>
+        <form action="/logout" method="post" class="mt-0.5">
+            <button type="submit" class="flex items-center w-full h-9 px-3 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span class="ml-3 text-sm font-medium whitespace-nowrap md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Sign out</span>
+            </button>
+        </form>
     </div>
-</nav>
+</aside>
+
+<!-- Top Bar -->
+<header class="fixed top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20
+               flex items-center justify-between px-4 md:pl-20 md:pr-6">
+    <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        <a href="/" class="md:hidden flex items-center gap-2">
+            <img src="/static/MCP_hub.svg" alt="MCP Hub" class="w-7 h-7 rounded-lg">
+        </a>
+        <h1 class="text-sm font-semibold text-slate-700">{{ page_titles.get(active_page, '') }}</h1>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="hidden sm:inline text-sm text-slate-500">{{ user.email }}</span>
+        {% if user.role == 'admin' %}
+        <span class="hidden sm:inline px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">Admin</span>
+        {% endif %}
+    </div>
+</header>
 
 <script>
-function toggleMobileMenu() {
-    const menu = document.getElementById('mobile-menu');
-    const menuIcon = document.getElementById('mobile-menu-icon');
-    const closeIcon = document.getElementById('mobile-menu-close-icon');
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const isOpen = !sidebar.classList.contains('-translate-x-full');
+    if (isOpen) {
+        closeSidebar();
+    } else {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+    }
+}
 
-    menu.classList.toggle('hidden');
-    menuIcon.classList.toggle('hidden');
-    closeIcon.classList.toggle('hidden');
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    sidebar.classList.add('-translate-x-full');
+    backdrop.classList.add('hidden');
 }
 </script>

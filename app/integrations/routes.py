@@ -36,7 +36,7 @@ from app.integrations.custom_servers import (
 from app.integrations.mcp_proxy import MCPProxyClient
 
 
-router = APIRouter(prefix="/integrations", tags=["integrations"])
+router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 oauth_router = APIRouter(prefix="/oauth", tags=["oauth"])
 
 
@@ -286,14 +286,14 @@ async def oauth_start(
 ):
     integration = integration_registry.get(provider)
     if not integration:
-        return RedirectResponse(url=f"/?error=not_found&message=Integration+not+found")
+        return RedirectResponse(url=f"/integrations?error=not_found&message=Integration+not+found")
 
     if getattr(integration, "auth_type", "oauth2") != "oauth2":
-        return RedirectResponse(url=f"/?error=unsupported&message=Integration+does+not+use+OAuth")
+        return RedirectResponse(url=f"/integrations?error=unsupported&message=Integration+does+not+use+OAuth")
 
     if not integration.is_configured():
         return RedirectResponse(
-            url=f"/?error=not_configured&message={integration.display_name}+is+not+configured.+Ask+admin+to+set+up+credentials."
+            url=f"/integrations?error=not_configured&message={integration.display_name}+is+not+configured.+Ask+admin+to+set+up+credentials."
         )
 
     state = secrets.token_urlsafe(32)
@@ -315,24 +315,24 @@ async def oauth_callback(
 ):
     integration = integration_registry.get(provider)
     if not integration:
-        return RedirectResponse(url="/?error=invalid_provider")
+        return RedirectResponse(url="/integrations?error=invalid_provider")
 
     if getattr(integration, "auth_type", "oauth2") != "oauth2":
-        return RedirectResponse(url="/?error=unsupported_auth")
+        return RedirectResponse(url="/integrations?error=unsupported_auth")
 
     if error:
         return RedirectResponse(
-            url=f"/?error=oauth_error&provider={provider}&message={error}"
+            url=f"/integrations?error=oauth_error&provider={provider}&message={error}"
         )
 
     if not code or not state:
-        return RedirectResponse(url="/?error=missing_params")
+        return RedirectResponse(url="/integrations?error=missing_params")
 
     with get_db() as conn:
         state_data = get_oauth_state(conn, state)
 
     if not state_data:
-        return RedirectResponse(url="/?error=invalid_state")
+        return RedirectResponse(url="/integrations?error=invalid_state")
 
     redirect_uri = f"{get_public_base_url()}/oauth/{provider}/callback"
 
@@ -367,11 +367,11 @@ async def oauth_callback(
             status="ok",
         )
 
-        return RedirectResponse(url=f"/?success=connected&provider={provider}")
+        return RedirectResponse(url=f"/integrations?success=connected&provider={provider}")
 
     except Exception as e:
         return RedirectResponse(
-            url=f"/?error=oauth_failed&provider={provider}&message={str(e)}"
+            url=f"/integrations?error=oauth_failed&provider={provider}&message={str(e)}"
         )
 
 

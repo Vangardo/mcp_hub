@@ -4,7 +4,7 @@ import json
 import os
 
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, status, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app.db import get_db
@@ -56,8 +56,201 @@ def get_user_by_email(conn, email: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
+PROVIDER_COLORS = {
+    "teamwork": "#8b5cf6",
+    "slack": "#10b981",
+    "miro": "#f59e0b",
+    "figma": "#ec4899",
+    "telegram": "#0ea5e9",
+    "binance": "#d97706",
+    "memory": "#6366f1",
+    "hub": "#6366f1",
+}
+
+
+def _build_dashboard_stats(
+    conn, period: str, user_id: Optional[int] = None, is_admin: bool = False
+) -> dict:
+    period_map = {
+        "24h": "datetime(a.created_at) >= datetime('now', '-1 day')",
+        "7d": "datetime(a.created_at) >= datetime('now', '-7 days')",
+        "30d": "datetime(a.created_at) >= datetime('now', '-30 days')",
+        "all": "1=1",
+    }
+    period_sql = period_map.get(period, period_map["7d"])
+
+    user_sql = "a.user_id = ?" if user_id else "1=1"
+    user_params = [user_id] if user_id else []
+    where = f"{period_sql} AND {user_sql}"
+
+    # KPI
+    total_calls = conn.execute(
+        f"SELECT COUNT(*) as c FROM audit_logs a WHERE {user_sql}", user_params
+    ).fetchone()["c"]
+
+    period_calls = conn.execute(
+        f"SELECT COUNT(*) as c FROM audit_logs a WHERE {where}", user_params
+    ).fetchone()["c"]
+
+    errors_period = conn.execute(
+        f"SELECT COUNT(*) as c FROM audit_logs a WHERE {where} AND a.status = 'error'",
+        user_params,
+    ).fetchone()["c"]
+
+    success_rate = round(
+        ((period_calls - errors_period) / period_calls * 100) if period_calls > 0 else 100, 1
+    )
+
+    if user_id:
+        active_intgs = conn.execute(
+            "SELECT COUNT(*) as c FROM connections WHERE user_id = ? AND is_connected = 1",
+            (user_id,),
+        ).fetchone()["c"]
+        memory_count = conn.execute(
+            "SELECT COUNT(*) as c FROM memory_items WHERE user_id = ?", (user_id,)
+        ).fetchone()["c"]
+        recent_memory = conn.execute(
+            "SELECT COUNT(*) as c FROM memory_items WHERE user_id = ? AND datetime(created_at) >= datetime('now', '-7 days')",
+            (user_id,),
+        ).fetchone()["c"]
+    else:
+        active_intgs = conn.execute(
+            "SELECT COUNT(*) as c FROM connections WHERE is_connected = 1"
+        ).fetchone()["c"]
+        memory_count = conn.execute(
+            "SELECT COUNT(*) as c FROM memory_items"
+        ).fetchone()["c"]
+        recent_memory = conn.execute(
+            "SELECT COUNT(*) as c FROM memory_items WHERE datetime(created_at) >= datetime('now', '-7 days')"
+        ).fetchone()["c"]
+
+    kpi = {
+        "total_calls": total_calls,
+        "calls_period": period_calls,
+        "success_rate": success_rate,
+        "errors": errors_period,
+        "active_integrations": active_intgs,
+        "memory_items": memory_count,
+    }
+
+    # Timeline
+    if period == "24h":
+        bucket_expr = "strftime('%Y-%m-%d %H:00', a.created_at)"
+    elif period in ("7d", "30d"):
+        bucket_expr = "date(a.created_at)"
+    else:
+        bucket_expr = "strftime('%Y-%m', a.created_at)"
+
+    timeline_rows = conn.execute(
+        f"""SELECT {bucket_expr} as bucket,
+                   SUM(CASE WHEN a.status = 'ok' THEN 1 ELSE 0 END) as ok_count,
+                   SUM(CASE WHEN a.status = 'error' THEN 1 ELSE 0 END) as err_count
+            FROM audit_logs a WHERE {where}
+            GROUP BY bucket ORDER BY bucket""",
+        user_params,
+    ).fetchall()
+
+    timeline = {
+        "labels": [r["bucket"] for r in timeline_rows],
+        "ok": [r["ok_count"] for r in timeline_rows],
+        "error": [r["err_count"] for r in timeline_rows],
+    }
+
+    # Provider usage
+    provider_rows = conn.execute(
+        f"""SELECT a.provider, COUNT(*) as cnt
+            FROM audit_logs a WHERE {where} AND a.provider IS NOT NULL
+            GROUP BY a.provider ORDER BY cnt DESC""",
+        user_params,
+    ).fetchall()
+
+    providers = {
+        "labels": [r["provider"] for r in provider_rows],
+        "values": [r["cnt"] for r in provider_rows],
+        "colors": [PROVIDER_COLORS.get(r["provider"], "#64748b") for r in provider_rows],
+    }
+
+    # Success vs errors by provider
+    err_prov_rows = conn.execute(
+        f"""SELECT a.provider,
+                   SUM(CASE WHEN a.status = 'ok' THEN 1 ELSE 0 END) as ok_count,
+                   SUM(CASE WHEN a.status = 'error' THEN 1 ELSE 0 END) as err_count
+            FROM audit_logs a WHERE {where} AND a.provider IS NOT NULL
+            GROUP BY a.provider ORDER BY ok_count + err_count DESC""",
+        user_params,
+    ).fetchall()
+
+    errors_by_provider = {
+        "labels": [r["provider"] for r in err_prov_rows],
+        "ok": [r["ok_count"] for r in err_prov_rows],
+        "error": [r["err_count"] for r in err_prov_rows],
+    }
+
+    # Top tools
+    top_tools_rows = conn.execute(
+        f"""SELECT COALESCE(a.tool_name, a.action) as tool, COUNT(*) as cnt
+            FROM audit_logs a WHERE {where}
+            GROUP BY tool ORDER BY cnt DESC LIMIT 10""",
+        user_params,
+    ).fetchall()
+
+    top_tools = {
+        "labels": [r["tool"] for r in top_tools_rows],
+        "values": [r["cnt"] for r in top_tools_rows],
+    }
+
+    result = {
+        "kpi": kpi,
+        "timeline": timeline,
+        "providers": providers,
+        "errors_by_provider": errors_by_provider,
+        "top_tools": top_tools,
+        "memory": {"total": memory_count, "recent_count": recent_memory},
+    }
+
+    if is_admin:
+        active_users_rows = conn.execute(
+            f"""SELECT {bucket_expr} as bucket, COUNT(DISTINCT a.user_id) as user_count
+                FROM audit_logs a WHERE {where}
+                GROUP BY bucket ORDER BY bucket""",
+            user_params,
+        ).fetchall()
+        result["active_users"] = {
+            "labels": [r["bucket"] for r in active_users_rows],
+            "values": [r["user_count"] for r in active_users_rows],
+        }
+
+        top_users_rows = conn.execute(
+            f"""SELECT u.email, COUNT(*) as cnt
+                FROM audit_logs a LEFT JOIN users u ON a.user_id = u.id
+                WHERE {where} AND a.user_id IS NOT NULL
+                GROUP BY a.user_id ORDER BY cnt DESC LIMIT 10""",
+            user_params,
+        ).fetchall()
+        result["top_users"] = {
+            "labels": [r["email"] or "Unknown" for r in top_users_rows],
+            "values": [r["cnt"] for r in top_users_rows],
+        }
+
+    return result
+
+
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request, user: Optional[User] = Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse(
+        request,
+        "dashboard.html",
+        {
+            "user": {"email": user.email, "role": user.role.value},
+            "active_page": "dashboard",
+        },
+    )
+
+
+@router.get("/integrations", response_class=HTMLResponse)
+async def integrations_page(request: Request, user: Optional[User] = Depends(get_current_user_optional)):
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
@@ -70,7 +263,6 @@ async def home(request: Request, user: Optional[User] = Depends(get_current_user
     user_provider_set = {ui["provider"] for ui in user_intgs}
     all_integrations = [i for i in integration_registry.list_all() if i.name != "memory"]
 
-    # Build "My Integrations" list
     my_integrations = []
     for ui_row in user_intgs:
         provider = ui_row["provider"]
@@ -93,7 +285,6 @@ async def home(request: Request, user: Optional[User] = Depends(get_current_user
             "meta": meta,
         })
 
-    # Build catalog (integrations NOT in user's dashboard)
     catalog = []
     for integration in all_integrations:
         if integration.name in user_provider_set:
@@ -105,7 +296,6 @@ async def home(request: Request, user: Optional[User] = Depends(get_current_user
             "is_configured": integration.is_configured(),
         })
 
-    # Custom servers
     custom_servers_data = []
     for server in custom_servers:
         tools = json.loads(server["tools_cache_json"]) if server.get("tools_cache_json") else []
@@ -278,8 +468,47 @@ async def disconnect_integration_ui(
 
     provider_label = quote(integration.display_name)
     return RedirectResponse(
-        url=f"/?success=disconnected&provider={provider_label}",
+        url=f"/integrations?success=disconnected&provider={provider_label}",
         status_code=status.HTTP_302_FOUND,
+    )
+
+
+@router.get("/api/dashboard/stats")
+async def dashboard_stats_api(
+    current_user: User = Depends(get_current_user),
+    period: str = Query("7d"),
+):
+    if period not in ("24h", "7d", "30d", "all"):
+        period = "7d"
+    with get_db() as conn:
+        data = _build_dashboard_stats(conn, period, user_id=current_user.id)
+    return JSONResponse(content=data)
+
+
+@router.get("/api/admin/dashboard/stats")
+async def admin_dashboard_stats_api(
+    admin: User = Depends(require_admin),
+    period: str = Query("7d"),
+):
+    if period not in ("24h", "7d", "30d", "all"):
+        period = "7d"
+    with get_db() as conn:
+        data = _build_dashboard_stats(conn, period, user_id=None, is_admin=True)
+    return JSONResponse(content=data)
+
+
+@router.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard_page(
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    return templates.TemplateResponse(
+        request,
+        "admin/dashboard.html",
+        {
+            "user": {"email": admin.email, "role": admin.role.value},
+            "active_page": "admin_dashboard",
+        },
     )
 
 
@@ -293,7 +522,7 @@ async def add_to_dashboard_ui(
         raise HTTPException(status_code=404, detail="Integration not found")
     with get_db() as conn:
         add_user_integration(conn, current_user.id, provider)
-    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/integrations", status_code=status.HTTP_302_FOUND)
 
 
 @router.post("/dashboard/{provider}/remove")
@@ -304,7 +533,7 @@ async def remove_from_dashboard_ui(
     with get_db() as conn:
         remove_user_integration(conn, current_user.id, provider)
         delete_connection(conn, current_user.id, provider)
-    return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/integrations", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/admin/users", response_class=HTMLResponse)

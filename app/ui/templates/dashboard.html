@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MCP Hub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header + Period Filter -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
+            <p class="mt-1 text-sm text-slate-500">Your MCP activity overview</p>
+        </div>
+        <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm overflow-x-auto" id="period-filter">
+            <button data-period="24h" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">24h</button>
+            <button data-period="7d" class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-100 text-primary-700 whitespace-nowrap transition-all">7 days</button>
+            <button data-period="30d" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">30 days</button>
+            <button data-period="all" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 whitespace-nowrap transition-all">All time</button>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="dashboard-loading" class="flex flex-col items-center justify-center py-20">
+        <svg class="animate-spin h-10 w-10 text-primary-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <p class="text-sm text-slate-400">Loading analytics...</p>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboard-content" class="hidden space-y-6">
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Calls</p>
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-slate-900" id="kpi-total-calls">--</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide" id="kpi-period-label">7d Calls</p>
+                    <div class="w-8 h-8 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-slate-900" id="kpi-calls-period">--</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Success Rate</p>
+                    <div class="w-8 h-8 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center" id="kpi-success-icon">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold" id="kpi-success-rate">--</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Errors</p>
+                    <div class="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold" id="kpi-errors">--</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Integrations</p>
+                    <div class="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-slate-900" id="kpi-integrations">--</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover transition-all duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Memory</p>
+                    <div class="w-8 h-8 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-slate-900" id="kpi-memory">--</p>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Activity Timeline -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Activity Timeline</h3>
+                    <span class="text-xs text-slate-400" id="timeline-label">Calls over time</span>
+                </div>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="chart-timeline"></canvas>
+                </div>
+                <div id="timeline-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                    <p class="text-sm text-slate-400">No activity data for this period</p>
+                </div>
+            </div>
+
+            <!-- Provider Usage -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Provider Usage</h3>
+                    <span class="text-xs text-slate-400">Distribution of calls</span>
+                </div>
+                <div class="relative flex items-center justify-center" style="height: 300px;" id="providers-container">
+                    <canvas id="chart-providers"></canvas>
+                    <div id="providers-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                        <p class="text-sm text-slate-400">No provider data</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success vs Errors -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Success vs Errors</h3>
+                    <span class="text-xs text-slate-400">By provider</span>
+                </div>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="chart-errors"></canvas>
+                    <div id="errors-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                        <p class="text-sm text-slate-400">No data</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Tools -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Top Tools</h3>
+                    <span class="text-xs text-slate-400">Most used</span>
+                </div>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="chart-tools"></canvas>
+                    <div id="tools-empty" class="hidden absolute inset-0 flex items-center justify-center">
+                        <p class="text-sm text-slate-400">No tool usage data</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Extra Admin Charts Slot -->
+        <div id="admin-charts-row" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+
+        <!-- Memory Quick Card -->
+        <div class="bg-gradient-to-r from-indigo-50 via-white to-purple-50 rounded-xl shadow-sm border border-slate-200 p-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Memory</h3>
+                        <p class="text-xs text-slate-500"><span id="memory-total" class="font-medium text-slate-700">--</span> items total &middot; <span id="memory-recent" class="font-medium text-emerald-600">--</span> added this week</p>
+                    </div>
+                </div>
+                <a href="/memory" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-800 bg-white border border-primary-200 rounded-lg hover:bg-primary-50 transition-all">
+                    View all
+                    <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ── State ────────────────────────────────────────────────────
+    let currentPeriod = '7d';
+    const charts = {};
+    const API_URL = '/api/dashboard/stats';
+
+    // ── Chart.js defaults ────────────────────────────────────────
+    Chart.defaults.font.family = "'Fira Sans', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.padding = 10;
+
+    // ── Period filter ────────────────────────────────────────────
+    const periodFilter = document.getElementById('period-filter');
+    periodFilter.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-period]');
+        if (!btn) return;
+        currentPeriod = btn.dataset.period;
+        periodFilter.querySelectorAll('button').forEach(b => {
+            b.classList.remove('bg-primary-100', 'text-primary-700');
+            b.classList.add('text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+        });
+        btn.classList.add('bg-primary-100', 'text-primary-700');
+        btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+        loadDashboard();
+    });
+
+    // ── Load ─────────────────────────────────────────────────────
+    async function loadDashboard() {
+        try {
+            const resp = await fetch(`${API_URL}?period=${currentPeriod}`);
+            if (!resp.ok) throw new Error('Failed');
+            const data = await resp.json();
+
+            document.getElementById('dashboard-loading').classList.add('hidden');
+            document.getElementById('dashboard-content').classList.remove('hidden');
+
+            updateKPIs(data.kpi);
+            updateTimeline(data.timeline);
+            updateProviders(data.providers);
+            updateErrors(data.errors_by_provider);
+            updateTopTools(data.top_tools);
+            updateMemory(data.memory);
+
+            if (typeof updateAdminCharts === 'function') updateAdminCharts(data);
+        } catch (e) {
+            showToast('Failed to load dashboard data', 'error');
+        }
+    }
+
+    // ── KPI ──────────────────────────────────────────────────────
+    function updateKPIs(kpi) {
+        document.getElementById('kpi-total-calls').textContent = kpi.total_calls.toLocaleString();
+        document.getElementById('kpi-calls-period').textContent = kpi.calls_period.toLocaleString();
+
+        const labels = { '24h': '24h', '7d': '7 Days', '30d': '30 Days', 'all': 'All Time' };
+        document.getElementById('kpi-period-label').textContent = labels[currentPeriod] + ' Calls';
+
+        const rateEl = document.getElementById('kpi-success-rate');
+        rateEl.textContent = kpi.success_rate + '%';
+        if (kpi.success_rate >= 90) {
+            rateEl.className = 'text-2xl font-bold text-emerald-600';
+        } else if (kpi.success_rate >= 70) {
+            rateEl.className = 'text-2xl font-bold text-amber-600';
+        } else {
+            rateEl.className = 'text-2xl font-bold text-red-600';
+        }
+
+        const errEl = document.getElementById('kpi-errors');
+        errEl.textContent = kpi.errors.toLocaleString();
+        errEl.className = 'text-2xl font-bold ' + (kpi.errors > 0 ? 'text-red-600' : 'text-slate-900');
+
+        document.getElementById('kpi-integrations').textContent = kpi.active_integrations;
+        document.getElementById('kpi-memory').textContent = kpi.memory_items;
+    }
+
+    // ── Chart helpers ────────────────────────────────────────────
+    function destroyChart(name) {
+        if (charts[name]) { charts[name].destroy(); delete charts[name]; }
+    }
+
+    function formatLabel(label) {
+        if (!label) return '';
+        // For hourly: show just HH:00
+        if (label.length > 13 && label.includes(' ')) return label.split(' ')[1] || label;
+        // For daily: show Mon DD
+        if (label.length === 10) {
+            const d = new Date(label + 'T00:00:00');
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        // For monthly: show Jan 2025
+        if (label.length === 7) {
+            const [y, m] = label.split('-');
+            const d = new Date(parseInt(y), parseInt(m) - 1);
+            return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        }
+        return label;
+    }
+
+    // ── Timeline ─────────────────────────────────────────────────
+    function updateTimeline(data) {
+        destroyChart('timeline');
+        const el = document.getElementById('timeline-empty');
+        if (!data.labels.length) { el.classList.remove('hidden'); return; }
+        el.classList.add('hidden');
+
+        charts.timeline = new Chart(document.getElementById('chart-timeline'), {
+            type: 'line',
+            data: {
+                labels: data.labels.map(formatLabel),
+                datasets: [
+                    {
+                        label: 'Success',
+                        data: data.ok,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: '#10b981',
+                    },
+                    {
+                        label: 'Errors',
+                        data: data.error,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: '#ef4444',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, padding: 16 } },
+                    tooltip: { mode: 'index', intersect: false },
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                    x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } },
+                },
+                interaction: { mode: 'index', intersect: false },
+            },
+        });
+    }
+
+    // ── Providers ────────────────────────────────────────────────
+    function updateProviders(data) {
+        destroyChart('providers');
+        const emptyEl = document.getElementById('providers-empty');
+        const canvas = document.getElementById('chart-providers');
+        if (!data.values.length) { emptyEl.classList.remove('hidden'); canvas.style.display = 'none'; return; }
+        emptyEl.classList.add('hidden'); canvas.style.display = '';
+
+        charts.providers = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: data.colors,
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverOffset: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { size: 12 } } },
+                },
+            },
+        });
+    }
+
+    // ── Errors by Provider ───────────────────────────────────────
+    function updateErrors(data) {
+        destroyChart('errors');
+        const el = document.getElementById('errors-empty');
+        if (!data.labels.length) { el.classList.remove('hidden'); return; }
+        el.classList.add('hidden');
+
+        charts.errors = new Chart(document.getElementById('chart-errors'), {
+            type: 'bar',
+            data: {
+                labels: data.labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                datasets: [
+                    { label: 'Success', data: data.ok, backgroundColor: '#10b981', borderRadius: 6, borderSkipped: false },
+                    { label: 'Errors', data: data.error, backgroundColor: '#ef4444', borderRadius: 6, borderSkipped: false },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, padding: 16 } },
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                },
+            },
+        });
+    }
+
+    // ── Top Tools ────────────────────────────────────────────────
+    function updateTopTools(data) {
+        destroyChart('tools');
+        const el = document.getElementById('tools-empty');
+        if (!data.labels.length) { el.classList.remove('hidden'); return; }
+        el.classList.add('hidden');
+
+        const gradient = document.getElementById('chart-tools').getContext('2d');
+        const g = gradient.createLinearGradient(0, 0, 400, 0);
+        g.addColorStop(0, '#6366f1');
+        g.addColorStop(1, '#8b5cf6');
+
+        charts.tools = new Chart(document.getElementById('chart-tools'), {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Calls',
+                    data: data.values,
+                    backgroundColor: g,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                    y: { grid: { display: false }, ticks: { font: { family: "'Fira Code', monospace", size: 11 } } },
+                },
+            },
+        });
+    }
+
+    // ── Memory ───────────────────────────────────────────────────
+    function updateMemory(data) {
+        document.getElementById('memory-total').textContent = data.total.toLocaleString();
+        document.getElementById('memory-recent').textContent = data.recent_count;
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    loadDashboard();
+</script>
+{% endblock %}
